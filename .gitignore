@@ -1,3 +1,9 @@
+# This file does currently not use LLM or AI
+
+# User-defined
+.odt#
+
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -221,3 +227,4 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+Developer_Scratchpad/.~lock.Shedule_german.odt\#

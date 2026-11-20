@@ -1,0 +1,17 @@
+=={{int:filedesc}}==
+{{Information
+|description={{en|1=RFEM 6: Scaled Sums Envelope}}
+{{de|1=RFEM 6: Umhüllende der skalierten Summen}}
+|date=2021-10-11
+|source=https://commons.wikimedia.org/wiki/File:RFEM-6-Scaled-Sums-Envelope.png
+|author=[https://commons.wikimedia.org/wiki/User:@ndre@s @ndre@s]
+|permission=
+|other versions=
+}}
+
+=={{int:license-header}}==
+https://creativecommons.org/licenses/by-sa/4.0/
+
+[[Category:Finite element analysis]]
+[[Category:Structural analysis]]
+[[Category:Civil engineering]]
