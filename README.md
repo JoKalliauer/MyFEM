@@ -9,6 +9,17 @@ open-source 2D-Beam-Mechanics with simple GUI-Input for Linux-like-systems
 ## Aim and Scope
 There exists a [German Scratchpad](https://github.com/JoKalliauer/MyFEM/blob/main/Developer_Scratchpad/Shedule_german.odt) for Developers
 
+## Prerequisites
+* PyNite
+```
+mkdir -p ~/pynite-projekt && cd ~/pynite-projekt
+python3 -m venv .venv
+source .venv/bin/activate
+pip install --upgrade pip
+pip install "PyNiteFEA[all]"
+````
+
+
 <!-- ## Already implemented-->
 
 # Declarations
