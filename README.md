@@ -1,15 +1,46 @@
-<!-- This file is created without LLM -->
-[//]: # (Author: Johannes Kalliauer)
+<!-- AI helped creating the file -->
+[//]: # (Author: Johannes Kalliauer,ChatGPT)
 [comment]: # (Created: 2026-11-20
-Last Changes: 2026-11-21 13:53 CET: License, Declarations)
+Last Changes:
+YYYY-MM-DD HH:mmCEST: Author:      Changes
+2026-11-21 13:53 CET: J.Kalliauer: License, Declarations
+2026-11-22 10:40 CET: J.Kalliauer: Aim more precise
+2026-11-22 10:56 CET: ChatGPT:     Structure
+)
 
 # MyFEM
-open-source 2D-Beam-Mechanics with simple GUI-Input for Linux-like-systems
+Open-source 2D-Beam-Mechanics with simple GUI-Input for Linux-like-systems for making the structural analysis free accessible, transparent and easy reproducible.
 
 ## Aim and Scope
 There exists a [German Scratchpad](https://github.com/JoKalliauer/MyFEM/blob/main/Developer_Scratchpad/Shedule_german.odt) for Developers
 
-## Prerequisites
+## Structure
+```
+                 MyFEM
+                   |
+          +--------+--------+
+          |                 |
+       GUI (Qt)         file-format
+          |              JSON/YAML
+          |                 |
+          +--------+--------+
+                   |
+              FEM-Modell
+                   |
+          +--------+--------+
+          |                 |
+       PyNite            IQ100
+          |                 |
+          +--------+--------+
+                   |
+                Results
+                   |
+             GUI / Export
+```
+
+## Installation
+Currently there is no finished draft to run, you could help developing instead.
+### Prerequisites
 * PyNite
 ```
 mkdir -p ~/pynite-projekt && cd ~/pynite-projekt
@@ -20,7 +51,9 @@ pip install "PyNiteFEA[all]"
 ````
 
 
-<!-- ## Already implemented-->
+## Already implemented
+ [x] first testfile
+ [ ] decission which GUI-Structure
 
 # Declarations
 ## Vibe-Coding
