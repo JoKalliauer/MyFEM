@@ -7,6 +7,7 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 12:49 CET: J.Kalliauer: litte corrections
 2026-11-22 14:52 CET: Copilot:      Use native Pynite x-z coordinates for 2D models
 2026-11-22 14:40 CET: Copilot:      Set 2D reference and model plane to x-z
+2026-11-22 19:48 CET: Copilot:      Documented .mfs workflow and concise change logs
 )
 
 # AGENTS.md: Instructions for AI coding assistants
@@ -33,7 +34,7 @@ Target platforms: **Linux, Windows (native) and WSL (WSLg).** Everything must wo
 | 3D view (later) | PyVista + pyvistaqt |
 | Plots (N/V/M etc.) | Matplotlib (`FigureCanvasQTAgg`); drawing diagrams in the scene may follow later |
 | FEM solver | PyNiteFEA (IQ100 later) |
-| Model files | JSON |
+| Model files | JSON (`.mfs` command source) |
 | Configuration | see section 9 |
 | Tables | Qt Model/View |
 | Undo/redo | `QUndoStack` / `QUndoCommand` |
@@ -105,11 +106,14 @@ examples/
 
 ## 8. Model file format
 
-* JSON, UTF-8, one top-level object with `"format_version"`, `"units"`, `"dimension"`, `"materials"`, `"sections"`, `"nodes"`, `"members"`, `"supports"`, `"loads"`.
+* JSON, UTF-8, one top-level object with `"format_version"`, `"units"`, `"dimension"`, `"materials"`, `"sections"`, `"nodes"`, `"members"`, `"supports"`, `"loads"`, and `"load_combinations"`.
 * Every format change bumps `format_version` and adds a migration; old files after the initial release of 0.1 must keep loading.
 * Validate on load (JSON Schema or explicit checks) and fail with clear, specific error messages.
 * Use stable string IDs for nodes and members, not list indices.
 * Write deterministic output (sorted keys, fixed indentation) so files diff cleanly in Git.
+* `.mfs` is the line-oriented, human-readable MyFEM command script. Parse it as MyFEM commands; never execute it as Python. The script compiler generates the corresponding JSON model.
+* The GUI's **Calculate** action saves the `.mfs`, generates same-basename `.json` and `.py` files, runs PyNite, and saves solver output as same-basename `.out`.
+* Keep the generated `.py` runnable with the project's PyNite environment. Report calculation failures clearly; do not present partial output as a successful result.
 
 ## 9. Configuration
 
@@ -153,8 +157,9 @@ Every file declares AI usage at the top:
 Every file also gets an author line, a creation date and a change log in the header (see the README.md: `Author`, `Created`, `Last Changes` with `YYYY-MM-DD HH:mm CET: Author: Changes`).
 
 * When you create a file, add the header with the correct category (normally category 3 unless a human wrote most of it).
-* When you edit a file, add a change log line with your name as author, and **upgrade the category** if your share makes the old one untrue.
+* When you edit a file, update its change log for meaningful changes and **upgrade the category** if your share makes the old one untrue.
 * Files that cannot hold comments (e.g. JSON) do not add a declaration.
+* Keep `Last Changes` concise: about 10 entries maximum. Record meaningful changes, not every edit. Group minor edits with the latest or next meaningful entry; remove older, well-established entries when Git history is sufficient.
 
 ## 13. Safety and liability
 
