@@ -1,16 +1,23 @@
-=={{int:filedesc}}==
-{{Information
-|description={{de|1=Visualisierte Verformungen eines Bürohauses}}
-|date=2013-10-10 17:11:48
-|source=https://commons.wikimedia.org/wiki/File:Screenshot_von_RFEM.png
-|author=[https://commons.wikimedia.org/w/index.php?title=User:@ndre@s @ndre@s]
-|permission=
-|other_versions=
-|other_fields=
-}}
+== Summary ==
+{| class="wikitable"
+! Feld
+! Inhalt
+|-
+| '''Beschreibung'''
+| Visualisierte Verformungen eines Bürohauses
+|-
+| '''Datum'''
+| 2013-10-10 17:11:48
+|-
+| '''Quelle'''
+| [https://commons.wikimedia.org/wiki/File:Screenshot_von_RFEM.png Wikimedia Commons – Screenshot_von_RFEM.png]
+|-
+| '''Autor'''
+| [https://commons.wikimedia.org/w/index.php?title=User:@ndre@s @ndre@s]
+|}
 
-=={{int:license-header}}==
-https://creativecommons.org/licenses/by-sa/3.0
+== Licensing ==
+[https://creativecommons.org/licenses/by-sa/3.0 Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)]
 
 [[Category:Structural analysis]]
 [[Category:Screenshots of software]]

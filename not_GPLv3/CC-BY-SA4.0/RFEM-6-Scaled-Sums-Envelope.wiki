@@ -1,16 +1,26 @@
-=={{int:filedesc}}==
-{{Information
-|description={{en|1=RFEM 6: Scaled Sums Envelope}}
-{{de|1=RFEM 6: Umhüllende der skalierten Summen}}
-|date=2021-10-11
-|source=https://commons.wikimedia.org/wiki/File:RFEM-6-Scaled-Sums-Envelope.png
-|author=[https://commons.wikimedia.org/wiki/User:@ndre@s @ndre@s]
-|permission=
-|other versions=
-}}
+== Summary ==
+{| class="wikitable"
+! Field
+! Content
+|-
+| '''Description (EN)'''
+| RFEM 6: Scaled Sums Envelope
+|-
+| '''Description (DE)'''
+| RFEM 6: Umhüllende der skalierten Summen
+|-
+| '''Date'''
+| 2021-10-11
+|-
+| '''Source'''
+| [https://commons.wikimedia.org/wiki/File:RFEM-6-Scaled-Sums-Envelope.png Wikimedia Commons – RFEM-6-Scaled-Sums-Envelope.png]
+|-
+| '''Author'''
+| [https://commons.wikimedia.org/wiki/User:@ndre@s @ndre@s]
+|}
 
-=={{int:license-header}}==
-https://creativecommons.org/licenses/by-sa/4.0/
+== Licensing ==
+[https://creativecommons.org/licenses/by-sa/4.0/ Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)]
 
 [[Category:Finite element analysis]]
 [[Category:Structural analysis]]
