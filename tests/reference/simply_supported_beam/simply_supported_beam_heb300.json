@@ -1,0 +1,87 @@
+{
+  "format_version": 1,
+  "units": "SI",
+  "dimension": 2,
+  "materials": [
+    {
+      "id": "steel",
+      "E": 210000000000.0,
+      "G": 80770000000.0,
+      "nu": 0.3,
+      "rho": 78500.0
+    }
+  ],
+  "sections": [
+    {
+      "id": "HEB300",
+      "A": 0.01491,
+      "I_yy": 0.0002517,
+      "I_zz": 8.563e-05,
+      "I_T": 1.85e-06
+    }
+  ],
+  "nodes": [
+    {
+      "id": "N1",
+      "x": 0.0,
+      "y": 0.0,
+      "z": 0.0
+    },
+    {
+      "id": "N2",
+      "x": 8.0,
+      "y": 0.0,
+      "z": 0.0
+    }
+  ],
+  "members": [
+    {
+      "id": "M1",
+      "node_start": "N1",
+      "node_end": "N2",
+      "length": 8.0,
+      "material": "steel",
+      "section": "HEB300"
+    }
+  ],
+  "supports": [
+    {
+      "node": "N1",
+      "DX": true,
+      "DY": true,
+      "DZ": true,
+      "RX": true,
+      "RY": false,
+      "RZ": true
+    },
+    {
+      "node": "N2",
+      "DX": false,
+      "DY": true,
+      "DZ": true,
+      "RX": true,
+      "RY": false,
+      "RZ": true
+    }
+  ],
+  "loads": [
+    {
+      "type": "member_distributed",
+      "member": "M1",
+      "direction": "FZ",
+      "value_start": 10000.0,
+      "value_end": 10000.0,
+      "position_start": 0.0,
+      "position_end": 8.0,
+      "case": "G"
+    }
+  ],
+  "load_combinations": [
+    {
+      "id": "SLS",
+      "cases": {
+        "G": 1.0
+      }
+    }
+  ]
+}

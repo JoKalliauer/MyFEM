@@ -1,0 +1,24 @@
+# AI created the file
+# Author: Copilot, Johannes Kalliauer
+# Copyright, License: GPLv3
+# Created: 2026-11-22
+
+# Last Changes:
+# YYYY-MM-DD HH:mm CEST: Author: Changes
+# 2026-11-22 14:35 CET: Copilot: Initialized uv project metadata and added PyNiteFEA
+# 2026-11-22 18:44 CET: Copilot: Added PySide6 for the command editor GUI
+# 2026-11-22 18:50 CET: Copilot: Added pytest for reproducible project tests
+
+[project]
+name = "myfem"
+version = "0.1.0"
+requires-python = ">=3.14"
+dependencies = [
+    "pynitefea>=3.2.1",
+    "pyside6>=6.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+]

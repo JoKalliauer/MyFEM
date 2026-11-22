@@ -1,5 +1,5 @@
 <!-- AI helped creating the file -->
-[//]: # (Author: Johannes Kalliauer, ChatGPT, Claude)
+[//]: # (Author: Johannes Kalliauer, ChatGPT, Claude, Copilot)
 [comment]: # (Created: 2026-11-20
 Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
@@ -8,6 +8,11 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 10:56 CET: ChatGPT:     Structure
 2026-11-22 13:06 CET: Claude:      Safety and liability
 2026-11-22 14:04 CET: J.Kalliauer: already implemented
+2026-11-22 14:31 CET: J.Kalliauer: json without coding-declations
+2026-11-22 18:40 CET: Copilot:     Documented replayable model command scripts
+2026-11-22 18:48 CET: Copilot:     Documented command editor GUI
+2026-11-22 18:50 CET: Copilot:     Documented dependency setup and tests
+2026-11-22 19:28 CET: Copilot:     Documented PyNite script and result-log generation
 )
 
 # MyFEM
@@ -41,22 +46,77 @@ There exists a [German Scratchpad](https://github.com/JoKalliauer/MyFEM/blob/mai
 ```
 
 ## Installation
-Currently there is no finished draft to run, you could help developing instead.
-### Prerequisites
-* PyNite
+Install the project dependencies from the repository root with:
+
+```shell
+uv sync
+```
 
 
 ## Already implemented
  [x] first testfile
  [x] decission which GUI-Structure: PySide6
  [x] PyNite-Test-file: https://github.com/JoKalliauer/MyFEM/tree/main/test-files
- [ ] JSON-Test-file:
- [ ] plain-text-GUI-Protokoll for test-file
- [ ] GUI
+ [x] JSON-Test-file:
+ [x] plain-text-GUI-Protokoll for test-file
+ [x] command-oriented GUI prototype
+
+## Run the GUI
+
+Start the command-oriented GUI from the repository root with:
+
+```shell
+uv run python -m myfem.gui
+```
+
+Commands entered in the window are validated and appended to the script editor.
+Save them as `.mfs`, then use **Generate JSON** to compile the current script.
+The GUI is an initial command editor; the planned 2D graphical model editor is
+not implemented yet. On WSLg, Qt may require `libxcb-cursor0`.
+
+## Reproducible model scripts
+
+The simply supported beam example is defined by a replayable `.mfs` command
+script. Compile it from the repository root with:
+
+```shell
+uv run python -m myfem.script tests/reference/simply_supported_beam/simply_supported_beam_heb300.mfs
+```
+
+By default, the JSON is written beside the script with the same base name.
+An output path can be supplied as the second argument.
+
+## Tests
+
+Run the test suite with:
+
+```shell
+uv run pytest
+```
+
+## Generate a PyNite script and results log
+
+From the folder containing `test.json`, run the MyFEM exporter using the
+repository path on your computer:
+
+```shell
+uv run --project /path/to/MyFEM python /path/to/MyFEM/myfem/pynite_export.py ./test.json
+```
+
+This creates `test.py` next to the JSON file and writes PyNite's analysis
+output to `output.log` in the current folder. The generated Python file is
+standalone and can be run again with the same project environment:
+
+```shell
+uv run --project /path/to/MyFEM python ./test.py
+```
+
+Use `--python` and `--log` to choose different output paths.
 
 # Declarations
 ## Vibe-Coding
 Declare every file at the top the use of Artificial Intelligence (AI). This might be drop this later, however adding it later might be impossible.
+Files without comments (e.g. *json) are excluded from this rule.
 1) This file is created without AI
    * Everything is written by Hand out of the authors head, however AI might be used for finding a bug (not correcting) or recommendations of improvement.
    * The concept is designed by the Author, but might be unconsciously be influenced by past conversations with others or AI.

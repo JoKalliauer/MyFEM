@@ -5,6 +5,8 @@ Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 12:32 CET: Claude:      Initial draft
 2026-11-22 12:49 CET: J.Kalliauer: litte corrections
+2026-11-22 14:52 CET: Copilot:      Use native Pynite x-z coordinates for 2D models
+2026-11-22 14:40 CET: Copilot:      Set 2D reference and model plane to x-z
 )
 
 # AGENTS.md: Instructions for AI coding assistants
@@ -96,8 +98,8 @@ examples/
 
 * **All internal data and all files use SI units**: meter (m), newton (N), pascal (Pa), kilogram (kg), second (s), radian (rad).
 * The model file contains a `"units": "SI"` field so future unit systems can be distinguished.
-* **The data model is 3D from the start**: nodes have `x, y, z` (2D models use `y = 0` and `"dimension": 2`), cross sections have `A, Iyy, Izz, I_T`, supports have six degrees of freedom, loads are vectors, members have a cross-section orientation (roll angle or reference vector).
-* Global coordinate system: **Z down** (structural convention), right-handed. PyNite uses Y up; the conversion lives only in the solver wrapper and must be covered by tests.
+* **The data model is 3D from the start**: nodes have `x, y, z`. 2D models use `y = 0`, the `x-z` plane, and `"dimension": 2`. Cross sections have `A, Iyy, Izz, I_T`, supports have six degrees of freedom, loads are vectors, and members have a cross-section orientation.
+* Global coordinate system: **Z down** (structural convention), right-handed. PyNite uses Y up; 2D x-z coordinates are kept direct for the Pynite example, while the axis conversion belongs only in the solver wrapper and must be covered by tests.
 * Document the sign conventions (axial force, shear, moment, rotation direction, local member axes) in `docs/conventions.md` and keep it in sync with the code. Never change a sign convention silently.
 * Default local axis rule for members: derived from member direction and global Z; document the special case of vertical members.
 
@@ -140,7 +142,7 @@ Configuration (user preferences, not model data) uses **TOML** read with `tomlli
 * If a requirement is ambiguous (sign convention, unit, behavior), ask instead of guessing.
 * Never invent PyNite API. If unsure, check the installed version's source or documentation.
 
-## 12. Declaration rules (AI usage, from README)
+## 12. Declaration rules (AI usage, from README.md)
 
 Every file declares AI usage at the top:
 
@@ -148,11 +150,11 @@ Every file declares AI usage at the top:
 2. `AI helped creating the file` (more than 50% by a human; AI may add comments, translate, improve structure or runtime)
 3. `AI created the file` (at least some parts, maybe everything, by AI)
 
-Every file also gets an author line, a creation date and a change log in the header (see the README: `Author`, `Created`, `Last Changes` with `YYYY-MM-DD HH:mm CET: Author: Changes`).
+Every file also gets an author line, a creation date and a change log in the header (see the README.md: `Author`, `Created`, `Last Changes` with `YYYY-MM-DD HH:mm CET: Author: Changes`).
 
 * When you create a file, add the header with the correct category (normally category 3 unless a human wrote most of it).
 * When you edit a file, add a change log line with your name as author, and **upgrade the category** if your share makes the old one untrue.
-* Files that cannot hold comments (e.g. JSON) are declared in a neighboring file or in the README.
+* Files that cannot hold comments (e.g. JSON) do not add a declaration.
 
 ## 13. Safety and liability
 
