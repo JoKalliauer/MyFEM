@@ -6,9 +6,11 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-22 18:45 CET: Copilot: Added command-script editor and JSON export
+# 2026-11-22 19:40 CET: Copilot: Added Calculate action and .out results
 
 """Command-oriented MyFEM window for recording replayable model scripts."""
 
+import subprocess
 from pathlib import Path
 
 from PySide6.QtGui import QCloseEvent, QTextCursor
@@ -25,7 +27,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from myfem.script import compile_commands, write_commands
+from myfem.pynite_export import generate_and_run
+from myfem.script import compile_commands, write_model
 
 
 class MainWindow(QMainWindow):
@@ -57,8 +60,8 @@ class MainWindow(QMainWindow):
         self.open_button.clicked.connect(lambda: self.open_script())
         self.save_button = QPushButton("Save script")
         self.save_button.clicked.connect(lambda: self.save_script())
-        self.export_button = QPushButton("Generate JSON")
-        self.export_button.clicked.connect(lambda: self.export_json())
+        self.calculate_button = QPushButton("Calculate")
+        self.calculate_button.clicked.connect(self.calculate)
 
         command_row = QHBoxLayout()
         command_row.addWidget(self.command_input)
@@ -67,13 +70,14 @@ class MainWindow(QMainWindow):
         file_row = QHBoxLayout()
         file_row.addWidget(self.open_button)
         file_row.addWidget(self.save_button)
-        file_row.addWidget(self.export_button)
+        file_row.addWidget(self.calculate_button)
 
         layout = QVBoxLayout()
         layout.addWidget(
             QLabel(
                 "Each accepted model command is appended to the replayable .mfs "
-                "script. Export validates and compiles that script to JSON."
+                "script. Calculate saves the script, generates JSON and Python, "
+                "runs PyNite, and writes the results to a .out file."
             )
         )
         layout.addWidget(self.script_editor)
@@ -93,8 +97,8 @@ class MainWindow(QMainWindow):
         save_action.triggered.connect(lambda: self.save_script())
         save_as_action = file_menu.addAction("Save script &as...")
         save_as_action.triggered.connect(lambda: self.save_script_as())
-        export_action = file_menu.addAction("&Generate JSON...")
-        export_action.triggered.connect(lambda: self.export_json())
+        calculate_action = file_menu.addAction("&Calculate")
+        calculate_action.triggered.connect(self.calculate)
         file_menu.addSeparator()
         exit_action = file_menu.addAction("E&xit")
         exit_action.triggered.connect(self.close)
@@ -169,28 +173,29 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(f"Saved {path}", 3000)
         return True
 
-    def export_json(self) -> None:
-        default_path = (
-            self.current_script.with_suffix(".json")
-            if self.current_script is not None
-            else Path("model.json")
-        )
-        filename, _ = QFileDialog.getSaveFileName(
-            self,
-            "Generate MyFEM JSON",
-            str(default_path),
-            "JSON model (*.json);;All files (*)",
-        )
-        if not filename:
+    def calculate(self) -> None:
+        if not self.save_script() or self.current_script is None:
             return
 
-        output = Path(filename)
+        script_path = self.current_script
+        model_path = script_path.with_suffix(".json")
+        python_path = script_path.with_suffix(".py")
+        output_path = script_path.with_suffix(".out")
+        self.statusBar().showMessage("Calculating with PyNite...")
         try:
-            write_commands(self.script_editor.toPlainText(), output)
-        except (OSError, TypeError, ValueError) as error:
-            QMessageBox.critical(self, "Could not generate JSON", str(error))
+            write_model(script_path, model_path)
+            generate_and_run(model_path, python_path, output_path)
+        except (
+            OSError,
+            TypeError,
+            ValueError,
+            subprocess.CalledProcessError,
+        ) as error:
+            QMessageBox.critical(self, "Calculation failed", str(error))
             return
-        self.statusBar().showMessage(f"Generated {output}", 5000)
+        self.statusBar().showMessage(
+            f"Calculation complete. Results saved to {output_path}", 5000
+        )
 
     def _confirm_discard(self) -> bool:
         if not self.script_editor.document().isModified():

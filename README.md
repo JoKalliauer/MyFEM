@@ -13,6 +13,7 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 18:48 CET: Copilot:     Documented command editor GUI
 2026-11-22 18:50 CET: Copilot:     Documented dependency setup and tests
 2026-11-22 19:28 CET: Copilot:     Documented PyNite script and result-log generation
+2026-11-22 19:40 CET: Copilot:     Documented GUI calculation and .out results
 )
 
 # MyFEM
@@ -70,7 +71,8 @@ uv run python -m myfem.gui
 ```
 
 Commands entered in the window are validated and appended to the script editor.
-Save them as `.mfs`, then use **Generate JSON** to compile the current script.
+Save them as `.mfs`, then use **Calculate** to generate the matching `.json` and
+`.py`, run PyNite, and save the results in the matching `.out` file.
 The GUI is an initial command editor; the planned 2D graphical model editor is
 not implemented yet. On WSLg, Qt may require `libxcb-cursor0`.
 
@@ -104,7 +106,7 @@ uv run --project /path/to/MyFEM python /path/to/MyFEM/myfem/pynite_export.py ./t
 ```
 
 This creates `test.py` next to the JSON file and writes PyNite's analysis
-output to `output.log` in the current folder. The generated Python file is
+output to `test.out` next to the JSON file. The generated Python file is
 standalone and can be run again with the same project environment:
 
 ```shell

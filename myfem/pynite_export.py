@@ -6,6 +6,7 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-22 19:28 CET: Copilot: Generated and ran standalone PyNite scripts
+# 2026-11-22 19:40 CET: Copilot: Defaulted result output to a matching .out file
 
 """Generate and run a standalone PyNite script from a MyFEM JSON model."""
 
@@ -182,18 +183,18 @@ def main() -> int:
     parser.add_argument(
         "--log",
         type=Path,
-        default=Path("output.log"),
-        help="Result log path (defaults to output.log in the current directory)",
+        help="Result path (defaults to the model path with a .out suffix)",
     )
     args = parser.parse_args()
     python_path = args.python or args.model.with_suffix(".py")
+    log_path = args.log or args.model.with_suffix(".out")
     try:
-        generate_and_run(args.model, python_path, args.log)
+        generate_and_run(args.model, python_path, log_path)
     except (OSError, TypeError, ValueError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
 
     print(f"Generated PyNite script: {python_path}")
-    print(f"Saved solver results: {args.log}")
+    print(f"Saved solver results: {log_path}")
     return 0
 
 

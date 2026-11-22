@@ -6,6 +6,7 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-22 19:28 CET: Copilot: Tested PyNite script generation and result logging
+# 2026-11-22 19:40 CET: Copilot: Checked .out result filenames
 
 from pathlib import Path
 
@@ -21,7 +22,7 @@ REFERENCE_JSON = (
 
 def test_generated_pynite_script_saves_results_to_log(tmp_path: Path) -> None:
     python_path = tmp_path / "model.py"
-    log_path = tmp_path / "output.log"
+    log_path = tmp_path / "model.out"
 
     generate_and_run(REFERENCE_JSON, python_path, log_path)
 
