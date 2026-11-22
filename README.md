@@ -42,13 +42,6 @@ There exists a [German Scratchpad](https://github.com/JoKalliauer/MyFEM/blob/mai
 Currently there is no finished draft to run, you could help developing instead.
 ### Prerequisites
 * PyNite
-```
-mkdir -p ~/pynite-projekt && cd ~/pynite-projekt
-python3 -m venv .venv
-source .venv/bin/activate
-pip install --upgrade pip
-pip install "PyNiteFEA[all]"
-````
 
 
 ## Already implemented
@@ -77,9 +70,10 @@ Last-Changes: If something breaks, to find the important milestones.
 
 # LICENSE
 except written otherwise everything is published under GPLv3 https://github.com/JoKalliauer/MyFEM/blob/main/LICENSE<br/>
-upon reasonable request other licenses are possible
+upon reasonable request other licenses might be possible (not for external sources)
 
 ## Exceptions from GPLv3:
+Some are compatible with GPLv3, however I try to keep the original license wherever easily accessable
 * everything in https://github.com/JoKalliauer/MyFEM/tree/main/not_GPLv3
   * [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0)
     * [Screenshot_von_RFEM.png](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.png) see [not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.wiki](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.wiki)
