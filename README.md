@@ -1,11 +1,13 @@
 <!-- AI helped creating the file -->
-[//]: # (Author: Johannes Kalliauer,ChatGPT)
+[//]: # (Author: Johannes Kalliauer, ChatGPT, Claude)
 [comment]: # (Created: 2026-11-20
 Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-21 13:53 CET: J.Kalliauer: License, Declarations
 2026-11-22 10:40 CET: J.Kalliauer: Aim more precise
 2026-11-22 10:56 CET: ChatGPT:     Structure
+2026-11-22 13:06 CET: Claude:      Safety and liability
+2026-11-22 14:04 CET: J.Kalliauer: already implemented
 )
 
 # MyFEM
@@ -46,7 +48,11 @@ Currently there is no finished draft to run, you could help developing instead.
 
 ## Already implemented
  [x] first testfile
- [ ] decission which GUI-Structure
+ [x] decission which GUI-Structure: PySide6
+ [x] PyNite-Test-file: https://github.com/JoKalliauer/MyFEM/tree/main/test-files
+ [ ] JSON-Test-file:
+ [ ] plain-text-GUI-Protokoll for test-file
+ [ ] GUI
 
 # Declarations
 ## Vibe-Coding
@@ -67,6 +73,29 @@ Declare every file at the top the use of Artificial Intelligence (AI). This migh
 Author: Not everyone is familiar with Git, therefore explicitly mentioning at the beginning doesn't harm anyone<br/>
 Create-Date:  for copyright and finding it in the history<br/>
 Last-Changes: If something breaks, to find the important milestones.
+
+# Safety and liability
+
+MyFEM is a structural analysis tool. Results may be wrong, for example because of
+software bugs, wrong input, unsuitable modelling assumptions or unsupported cases.
+They must be independently checked by a qualified engineer before they are used
+for any design, construction or safety-relevant decision. MyFEM does not replace
+code (standard) checks such as Eurocode verifications.
+
+The software is provided free of charge under the GPLv3. To the extent permitted
+by applicable law, it comes without any warranty and the authors and copyright
+holders are not liable for damages arising from its use (see sections 15 to 17 of
+the [GPLv3](LICENSE)).
+
+```
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+PARTICULAR PURPOSE AND NONINFRINGEMENT. TO THE EXTENT PERMITTED BY APPLICABLE LAW,
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES
+OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
 
 # LICENSE
 except written otherwise everything is published under GPLv3 https://github.com/JoKalliauer/MyFEM/blob/main/LICENSE<br/>
