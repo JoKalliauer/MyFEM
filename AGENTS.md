@@ -8,6 +8,7 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 14:52 CET: Copilot:      Use native Pynite x-z coordinates for 2D models
 2026-11-22 14:40 CET: Copilot:      Set 2D reference and model plane to x-z
 2026-11-22 19:48 CET: Copilot:      Documented .mfs workflow and concise change logs
+2026-11-23 22:09 CET: Copilot:      Clarified format-version approval and patch rules
 )
 
 # AGENTS.md: Instructions for AI coding assistants
@@ -107,7 +108,9 @@ examples/
 ## 8. Model file format
 
 * JSON, UTF-8, one top-level object with `"format_version"`, `"units"`, `"dimension"`, `"materials"`, `"sections"`, `"nodes"`, `"members"`, `"supports"`, `"loads"`, and `"load_combinations"`.
-* Every format change bumps `format_version` and adds a migration; old files after the initial release of 0.1 must keep loading.
+* Every format change adds a migration; old files after the initial release of 0.1 must keep loading.
+* Ask the maintainer before changing the major/minor version (for example, `0.1` to `0.2`).
+* The agent may increase a patch subversion without asking (for example, `0.1.01` to `0.1.02`), but only in ascending order; never decrease or reuse a patch version.
 * Validate on load (JSON Schema or explicit checks) and fail with clear, specific error messages.
 * Use stable string IDs for nodes and members, not list indices.
 * Write deterministic output (sorted keys, fixed indentation) so files diff cleanly in Git.

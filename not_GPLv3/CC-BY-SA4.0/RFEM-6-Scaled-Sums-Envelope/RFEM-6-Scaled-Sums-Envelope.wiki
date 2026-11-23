@@ -1,0 +1,27 @@
+== Summary ==
+{| class="wikitable"
+! Field
+! Content
+|-
+| '''Description (EN)'''
+| RFEM 6: Scaled Sums Envelope
+|-
+| '''Description (DE)'''
+| RFEM 6: Umhüllende der skalierten Summen
+|-
+| '''Date'''
+| 2021-10-11
+|-
+| '''Source'''
+| [https://commons.wikimedia.org/wiki/File:RFEM-6-Scaled-Sums-Envelope.png Wikimedia Commons – RFEM-6-Scaled-Sums-Envelope.png]
+|-
+| '''Author'''
+| [https://commons.wikimedia.org/wiki/User:@ndre@s @ndre@s]
+|}
+
+== Licensing ==
+[https://creativecommons.org/licenses/by-sa/4.0/ Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)]
+
+[[Category:Finite element analysis]]
+[[Category:Structural analysis]]
+[[Category:Civil engineering]]

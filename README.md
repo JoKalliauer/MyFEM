@@ -3,17 +3,16 @@
 [comment]: # (Created: 2026-11-20
 Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
-2026-11-21 13:53 CET: J.Kalliauer: License, Declarations
-2026-11-22 10:40 CET: J.Kalliauer: Aim more precise
-2026-11-22 10:56 CET: ChatGPT:     Structure
 2026-11-22 13:06 CET: Claude:      Safety and liability
-2026-11-22 14:04 CET: J.Kalliauer: already implemented
-2026-11-22 14:31 CET: J.Kalliauer: json without coding-declations
 2026-11-22 18:40 CET: Copilot:     Documented replayable model command scripts
-2026-11-22 18:48 CET: Copilot:     Documented command editor GUI
-2026-11-22 18:50 CET: Copilot:     Documented dependency setup and tests
 2026-11-22 19:28 CET: Copilot:     Documented PyNite script and result-log generation
 2026-11-22 19:40 CET: Copilot:     Documented GUI calculation and .out results
+2026-11-22 21:20 CET: Copilot:     Documented file toolbar and paired JSON save
+2026-11-22 21:36 CET: Copilot:     Documented short GUI launch commands
+2026-11-23 20:40 CET: Copilot:     Added MyFEM and PyNite acknowledgements
+2026-11-23 21:17 CET: Copilot:     Documented model-entry defaults and toolbar
+2026-11-23 21:33 CET: Copilot:     Set JSON format version to 0.1
+2026-11-23 21:53 CET: Copilot:     Documented precision in format 0.1
 )
 
 # MyFEM
@@ -64,17 +63,65 @@ uv sync
 
 ## Run the GUI
 
-Start the command-oriented GUI from the repository root with:
+After `uv sync`, start the GUI from the repository root:
 
 ```shell
-uv run python -m myfem.gui
+uv run myfem
 ```
 
-Commands entered in the window are validated and appended to the script editor.
-Save them as `.mfs`, then use **Calculate** to generate the matching `.json` and
-`.py`, run PyNite, and save the results in the matching `.out` file.
-The GUI is an initial command editor; the planned 2D graphical model editor is
-not implemented yet. On WSLg, Qt may require `libxcb-cursor0`.
+Alternatively, use `run_myfem.bat` on Windows or `./run_myfem.sh` on Linux/WSL.
+
+The toolbar provides **New**, **Open**, **Save**, **Node**, **Member**,
+**Support**, **Distributed load**, and **Calculate**. The Help menu contains
+version and update information. The 2D graphical editor is not implemented
+yet. On WSLg, Qt may require `libxcb-cursor0`.
+
+## Model-entry defaults
+
+The node dialog fixes `y = 0` for the 2D X-Z model. New members use
+`material=default section=default`; supports set `DY`, `RX`, and `RZ` to true,
+and distributed loads use `case=default`.
+
+If a member has no material or section definition, MyFEM uses these provisional
+values:
+
+| Default material | Value |
+|---|---:|
+| `E` | 210000000000 Pa |
+| `G` | 80770000000 Pa |
+| `nu` | 0.3 |
+| `rho` | 78500 kg/m³ |
+
+| Default section | Value |
+|---|---:|
+| `A` | 0.01491 m² |
+| `I_yy` | 0.0002517 m⁴ |
+| `I_zz` | 0.00008563 m⁴ |
+| `I_T` | 0.00000185 m⁴ |
+
+When exactly one differently named material or section exists, it is used for
+`default`; if multiple exist without an explicit `default`, compilation fails.
+Automatically inserted values are marked in JSON, and deformation results are
+omitted for affected members. If no combination is defined, `SLS default=1` is
+generated only when loads use the `default` case; other load cases require an
+explicit combination.
+
+New JSON models use `format_version: 0.1`. Existing integer versions `1` and
+`2` remain loadable and are migrated when exported to PyNite.
+
+## Result precision
+
+By default, MyFEM writes `precision.absolute=0` and `precision.relative=1e-12`
+to JSON. Values smaller than the greater of the absolute tolerance and the
+relative tolerance times the largest result with the same unit are shown as
+zero. The absolute tolerance uses internal SI values. Override either or both
+settings in an `.mfs` script, for example:
+
+```text
+precision absolute=1e-11 relative=1e-12
+```
+
+Settings can also be given on separate `precision` lines.
 
 ## Reproducible model scripts
 
@@ -167,6 +214,16 @@ upon reasonable request other licenses might be possible (not for external sourc
 Some are compatible with GPLv3, however I try to keep the original license wherever easily accessable
 * everything in https://github.com/JoKalliauer/MyFEM/tree/main/not_GPLv3
   * [Creative Commons Attribution-ShareAlike 3.0 Unported (CC BY-SA 3.0)](https://creativecommons.org/licenses/by-sa/3.0)
-    * [Screenshot_von_RFEM.png](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.png) see [not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.wiki](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.wiki)
+    * [Screenshot_von_RFEM.png](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.png), by @ndre@s on Wikimedia Commons; see the [attribution record](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA3.0/Screenshot_von_RFEM.wiki).
   * [Creative Commons Attribution-ShareAlike 4.0 International (CC BY-SA 4.0)](https://creativecommons.org/licenses/by-sa/4.0/)
-    * [RFEM-6-Scaled-Sums-Envelope.png ](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope.png) see [not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope.wiki](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope.wiki)
+    * [RFEM-6-Scaled-Sums-Envelope.png](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope.png), by @ndre@s on Wikimedia Commons; see the [attribution record](https://github.com/JoKalliauer/MyFEM/blob/main/not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope.wiki).
+    * The GUI toolbar icons in [not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope](not_GPLv3/CC-BY-SA4.0/RFEM-6-Scaled-Sums-Envelope) are adapted from the image above.
+
+## Acknowledgements
+
+MyFEM is maintained and principally authored by [Johannes Kalliauer](https://github.com/JoKalliauer).
+
+The solver is [PyNiteFEA](https://github.com/JWock82/Pynite), authored by
+D. Craig Brinck, PE, SE, and maintained upstream by Craig ([`@JWock82`](https://github.com/JWock82)).
+PyNiteFEA is distributed under the [MIT License](https://github.com/JWock82/Pynite/blob/main/LICENSE);
+see its [contributors](https://github.com/JWock82/Pynite/graphs/contributors).

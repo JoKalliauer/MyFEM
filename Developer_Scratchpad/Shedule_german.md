@@ -4,9 +4,21 @@
 <!-- Last Changes:
 YYYY-MM-DD HH:mm CET: Author: Changes
 2026-11-22 19:55 CET: Copilot: Converted the ODT notes to Markdown without content edits
+2026-11-22 19:58 CET: Copilot: Added current implementation status
 -->
 
 # Ziel von „MyFEM“:
+
+## Aktueller Stand (2026-11-22)
+
+- Das aktuelle Projektziel ist eine 2D-Stabwerksanalyse mit PyNite. Die ursprüngliche RatzFatz-Idee ohne definiertes Material und Querschnitt ist noch nicht umgesetzt; aktuelle Modelle benötigen beides.
+- Vorhanden ist eine befehlsorientierte PySide6-GUI, kein grafischer 2D-Präprozessor. JSON ist das Modellformat; YAML gibt es nicht. `.mfs` unterstützt Material, Querschnitt, Knoten, Stab, Auflager, verteilte Stablasten und Lastkombinationen.
+- **Calculate** speichert `.mfs`, erzeugt gleichnamige `.json`- und `.py`-Dateien, startet PyNite und speichert dessen Ergebnisausgabe in einer gleichnamigen `.out`-Datei. Änderungen im Editor sind erst nach Speichern oder Berechnen dauerhaft; eine Absturz-Wiederherstellung gibt es nicht.
+- Modell und Dateien verwenden SI-Einheiten (m, N, Pa, kg, s, rad). Die aktuelle `.out`-Zusammenfassung enthält Auflagerkräfte FX/FZ, My- und Fz-Maxima/Minima sowie dz-Maximum (Ausgabe in kN, kNm und mm); keine Normalkraft und keine Diagramme.
+- Noch nicht umgesetzt sind auswählbare Einheitensysteme, Punktlasten, Stabeinzellasten, Gelenke, geometrische Querschnittseingabe, Eigengewicht, Temperatur- und Auflagerverschiebungslasten sowie 3D.
+- Der analytische Referenztest umfasst derzeit den einfach gelagerten Balken mit Gleichlast; weitere Referenzfälle fehlen.
+
+## Ursprüngliche Idee
 
 1. Ein einfaches Programm „RatzFatz“ mit GUI bei dem man eine Last eintippt, ein Momentenlinie bekommt, ohne dass man ein Querschnitt/Material definiert (EA=∞,GA=∞,EI=const). Zum schnellen Plausibiliseren, ob die Großenordnung von Berechnungsergebnissen passt.
 1. Abspeichern der Eingaben in \*.dat, dass man in Sofistik-Teddy damit weiterarbeiten kann.
@@ -40,7 +52,7 @@ YYYY-MM-DD HH:mm CET: Author: Changes
    1. Präprozessor: Punktlast, Stabeinzellast, Trapezlast für Stababschnitte (nur orthogonal oder parallel zur Stabachse) 
    1. Präprozessor: Löschen/Bearbeiten von Eingaben
    1. Präprozessor: Neue Datei, öffnen
-   1. PyNite-File schreiben und starten und Ergebnisse auslesen
+   1. [x] PyNite-File schreiben und starten und Ergebnisse auslesen
    1. Postprozessor: Biegemoment, Querkraft, Normalkraft, Durchbiegung, Auflagerkräfte
    1. Progamm testen
    1. Einheiten Nutzer wählt zwischen:
@@ -62,7 +74,7 @@ YYYY-MM-DD HH:mm CET: Author: Changes
       1. Datei: Öffnen, Speichern
       1. Optionen: Optionen
       1. ?: Lizenzinformationen
-   1. Präprozessor: Jeder GUISchritt wird in ein Skriptfile geschrieben, das von der GUI eingelesen und wiederholt werden kann (bei einem Absturz kann man alle Zeilen wiederholen ohne Datenverlust)
+   1. Präprozessor: Modellbefehle werden in einem `.mfs`-Skript gesammelt, gespeichert und wieder eingelesen. Im Fall eines Absturzes ist der letzte ausgeführte Befehl mitgeschrieben und gespeichert.
 
 ## weitere Schritte mit Status „stalled“
 
@@ -71,7 +83,6 @@ YYYY-MM-DD HH:mm CET: Author: Changes
    1. Präprozessor: Exzentrizitäten
    1. Präprozessor: Man kann optional auch Zoomeinstellungen mitprotokollieren, also man sieht wenn man einen Knoten hin und hinauszoomt
    1. Präprozessor: Man kann Rückgängig gemachte Optionen nicht mit ausgeben, so dass die fertige Struktur ohne nachträgliche Bearbeitungen gleich richtig erzeugt wird
-1. Eigenes Dateiformat als \*.json oder \*.yaml
 1. Eigener Solver
 1. IQ100 (TU-Wien) als analytischen Solver unterstützen
 1. nachvollziehbare Querschnittsberechnung (in Tabellenkalkulation.ods, die von MyFEM geschrieben werden kann)
@@ -80,3 +91,39 @@ YYYY-MM-DD HH:mm CET: Author: Changes
 1. Funktionen von ConDIM und Inka implementieren
 1. Volums-elemente in MyFEM implementieren
 1. eingeschränkte Kompatibilät mit anderen GUIs/Solvern
+
+# Iconleiste
+
+Zweizeilige Icon-Leiste.
+1 Zeile: Präpozessor
+  a. neue Datei (*.mfs und *.json)
+  b. öffnen (*.mfs)
+  c. speichern (*.mfs und *.json)
+  d Markiertes Element löschen (mitdokumentieren in *.mfs)
+  e. Rückgänig (mitdokumentieren in *.mfs)
+  f. Wiederherstellen
+  g Rechner starten (wenn installiert in dieser Reihenfolge: "Qalculate!" "gnome-calculator" "KCalc" "galculator" "xfe4-calc" "calc.exe", wenn keiner dann ausgegraut)
+  h Theorie I-Ordnung (vorausgewählt bei Neuer Datei)
+  i Theorie II-Ordnung
+  j Material & Querschnitt
+  k Mauszeiger zum anklicken (vorausgewählt beim öffnen/erstellen einer Datei)
+  l. neuer Knoten erstellen
+  m. Auflagerbedigungen an Knoten
+  n Stab zwischen bestehenden Knoten
+  o. Stab samt Anfangs- und End-Knoten erstellen
+  p Knoten zu einem Vollgelenk (Biegemoment) machen
+  q Stabende mit einem Gelenk (Biegemoment) ergänzen [nur sinnvoll ab 3 Stäbe die an dem Knoten anschließen]
+  r. Einzellast an Knoten
+  s Einzellast an Stab
+  t. Trapezlast orthongal zum Stab
+  u Zoom +/-
+  v Zoom Fenster
+  w Zoom Grenzen und Zentrieren
+  x. Berechnen (*.mfs => *.json => *.py => Pynite => *.out)
+2. Zeile Postprocessor
+  A Normalkraft anzeigen
+  B Querkraft anzeigen
+  C Biegemoment anzeigen
+  D Durchbiegung anzeigen
+  
+  

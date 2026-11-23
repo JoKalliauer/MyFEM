@@ -6,6 +6,9 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-22 18:40 CET: Copilot: Added replayable model command scripts
+# 2026-11-23 21:17 CET: Copilot: Added default properties and provenance
+# 2026-11-23 21:33 CET: Copilot: Set model format version to 0.1
+# 2026-11-23 21:53 CET: Copilot: Added precision defaults while retaining format 0.1
 
 """Compile MyFEM command scripts into deterministic JSON model files."""
 
@@ -14,6 +17,19 @@ import json
 import math
 import shlex
 from pathlib import Path
+
+_DEFAULT_MATERIAL = {
+    "E": 210_000_000_000,
+    "G": 80_770_000_000,
+    "nu": 0.3,
+    "rho": 78_500,
+}
+_DEFAULT_SECTION = {
+    "A": 0.01491,
+    "I_yy": 0.0002517,
+    "I_zz": 0.00008563,
+    "I_T": 0.00000185,
+}
 
 
 def _parse_value(value: str) -> float | bool | str:
@@ -81,7 +97,7 @@ class CommandScript:
 
     def __init__(self) -> None:
         self._data: dict[str, object] = {
-            "format_version": 1,
+            "format_version": 0.1,
             "units": "SI",
             "dimension": 2,
         }
@@ -92,6 +108,8 @@ class CommandScript:
         self._supports: list[dict[str, object]] = []
         self._loads: list[dict[str, object]] = []
         self._load_combinations: list[dict[str, object]] = []
+        self._precision: dict[str, object] | None = None
+        self._precision_options: set[str] = set()
 
     def execute(self, line: str) -> None:
         """Execute one command line."""
@@ -114,6 +132,8 @@ class CommandScript:
             self._load(args)
         elif command == "combination":
             self._combination(args)
+        elif command == "precision":
+            self._set_precision(args)
         else:
             raise ValueError(f"Unknown command {command!r}")
 
@@ -150,7 +170,7 @@ class CommandScript:
             raise ValueError(
                 "member syntax: member ID NODE_START NODE_END key=value..."
             )
-        options = _required(_parse_options(args[3:]), ("material", "section"))
+        options = _required(_parse_options(args[3:]), (), ("material", "section"))
         node_start = self._find(self._nodes, args[1], "node")
         node_end = self._find(self._nodes, args[2], "node")
         start = tuple(_number(node_start[axis], axis) for axis in ("x", "y", "z"))
@@ -158,10 +178,16 @@ class CommandScript:
         length = math.dist(start, end)
         if length == 0:
             raise ValueError("Member endpoints must be different")
-        material = _identifier(options["material"], "material")
-        section = _identifier(options["section"], "section")
-        self._find(self._materials, material, "material")
-        self._find(self._sections, section, "section")
+        material = _identifier(options.get("material", "default"), "material")
+        section = _identifier(options.get("section", "default"), "section")
+        material_is_default = material == "default"
+        section_is_default = section == "default"
+        material = self._resolve_property(
+            self._materials, material, "material", _DEFAULT_MATERIAL
+        )
+        section = self._resolve_property(
+            self._sections, section, "section", _DEFAULT_SECTION
+        )
         member = {
             "id": args[0],
             "node_start": args[1],
@@ -170,6 +196,10 @@ class CommandScript:
             "material": material,
             "section": section,
         }
+        if material_is_default:
+            member["material_was_default"] = True
+        if section_is_default:
+            member["section_was_default"] = True
         _record(self._members, member)
 
     def _support(self, args: list[str]) -> None:
@@ -222,6 +252,57 @@ class CommandScript:
         combination = {"id": args[0], "cases": cases}
         _record(self._load_combinations, combination)
 
+    def _set_precision(self, args: list[str]) -> None:
+        options = _required(_parse_options(args), (), ("absolute", "relative"))
+        if not options:
+            raise ValueError("precision requires absolute= and/or relative=")
+        duplicates = self._precision_options.intersection(options)
+        if duplicates:
+            raise ValueError(
+                f"Precision option(s) specified more than once: "
+                f"{', '.join(sorted(duplicates))}"
+            )
+
+        if self._precision is None:
+            self._precision = {
+                "absolute": 0.0,
+                "relative": 1e-12,
+                "defaulted": False,
+            }
+        for key, value in options.items():
+            number = _number(value, key)
+            if number < 0:
+                raise ValueError(f"Precision option {key!r} must not be negative")
+            self._precision[key] = number
+        self._precision_options.update(options)
+
+    @classmethod
+    def _resolve_property(
+        cls,
+        records: list[dict[str, object]],
+        identifier: str,
+        kind: str,
+        fallback: dict[str, float],
+    ) -> str:
+        if identifier != "default":
+            cls._find(records, identifier, kind)
+            return identifier
+
+        if any(record.get("id") == "default" for record in records):
+            return "default"
+        if not records:
+            _record(
+                records,
+                {"id": "default", **fallback, "auto_generated": True},
+            )
+            return "default"
+        if len(records) == 1:
+            return _identifier(records[0]["id"], kind)
+        raise ValueError(
+            f"No {kind} named 'default' exists; {len(records)} different "
+            f"{kind}s are defined, so the default is ambiguous"
+        )
+
     @staticmethod
     def _find(
         records: list[dict[str, object]], identifier: str, kind: str
@@ -233,6 +314,23 @@ class CommandScript:
 
     def to_dict(self) -> dict[str, object]:
         """Return the model data generated by the commands."""
+        combinations = self._load_combinations
+        if not combinations:
+            load_cases = {str(load["case"]) for load in self._loads}
+            other_cases = sorted(load_cases - {"default"})
+            if other_cases:
+                raise ValueError(
+                    "No load combination is defined. The default SLS "
+                    "combination can only be generated for load case 'default'; "
+                    f"found: {', '.join(other_cases)}"
+                )
+            combinations = [
+                {
+                    "id": "SLS",
+                    "cases": {"default": 1.0},
+                    "generated_default": True,
+                }
+            ]
         return {
             **self._data,
             "materials": self._materials,
@@ -241,7 +339,9 @@ class CommandScript:
             "members": self._members,
             "supports": self._supports,
             "loads": self._loads,
-            "load_combinations": self._load_combinations,
+            "load_combinations": combinations,
+            "precision": self._precision
+            or {"absolute": 0.0, "relative": 1e-12, "defaulted": True},
         }
 
 
@@ -253,7 +353,10 @@ def compile_commands(text: str, source_name: str = "<commands>") -> dict[str, ob
             script.execute(line)
         except (TypeError, ValueError) as error:
             raise ValueError(f"{source_name}:{line_number}: {error}") from error
-    return script.to_dict()
+    try:
+        return script.to_dict()
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{source_name}: {error}") from error
 
 
 def compile_script(source: Path) -> dict[str, object]:

@@ -8,15 +8,28 @@
 # 2026-11-22 14:35 CET: Copilot: Initialized uv project metadata and added PyNiteFEA
 # 2026-11-22 18:44 CET: Copilot: Added PySide6 for the command editor GUI
 # 2026-11-22 18:50 CET: Copilot: Added pytest for reproducible project tests
+# 2026-11-22 21:36 CET: Copilot: Added GUI launch entry points and package discovery
+# 2026-11-23 23:56 CET: Copilot: Added SPDX project license metadata
 
 [project]
 name = "myfem"
 version = "0.1.0"
+license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
     "pynitefea>=3.2.1",
     "pyside6>=6.12.0",
 ]
+
+[project.gui-scripts]
+myfem = "myfem.gui.__main__:main"
+"myfem.run" = "myfem.gui.__main__:main"
+
+[tool.uv]
+package = true
+
+[tool.setuptools.packages.find]
+include = ["myfem*"]
 
 [dependency-groups]
 dev = [
