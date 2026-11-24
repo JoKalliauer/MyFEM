@@ -10,6 +10,7 @@
 # 2026-11-22 14:40 CET: Copilot: Converted the reference plane to the structural x-z plane
 # 2026-11-22 14:52 CET: Copilot: Kept Pynite coordinates directly in the x-z plane
 # 2026-11-22 15:08 CET: Copilot: Corrected the horizontal beam deflection output
+# 2026-11-24 22:02 CET: Copilot: Updated the reference model to format 0.2 beams
 
 import json
 from pathlib import Path
@@ -50,13 +51,13 @@ def main() -> None:
             section["I_T"],
         )
 
-    for member in data["members"]:
+    for beam in data["beams"]:
         model.add_member(
-            member["id"],
-            member["node_start"],
-            member["node_end"],
-            member["material"],
-            member["section"],
+            beam["id"],
+            beam["node_start"],
+            beam["node_end"],
+            beam["material"],
+            beam["section"],
         )
 
     for support in data["supports"]:
@@ -74,7 +75,7 @@ def main() -> None:
         if load["direction"] != "FZ":
             raise ValueError("The 2D reference model supports loads in FZ only")
         model.add_member_dist_load(
-            load["member"],
+            load["beam"],
             "FZ",
             load["value_start"],
             load["value_end"],
@@ -89,12 +90,12 @@ def main() -> None:
     model.analyze(check_statics=True)
 
     load = data["loads"][0]
-    member = data["members"][0]
+    beam = data["beams"][0]
     left_node = data["supports"][0]["node"]
     right_node = data["supports"][1]["node"]
     section = data["sections"][0]
     material = data["materials"][0]
-    span = member["length"]
+    span = beam["length"]
     distributed_load = abs(load["value_start"])
 
     analytical_reference = {
@@ -117,26 +118,26 @@ def main() -> None:
     )
 
     print("\n=== INTERNAL FORCES & DEFLECTION ===")
-    analysed_member = model.members[member["id"]]
+    analysed_beam = model.members[beam["id"]]
     print(
         f"Max. bending moment My (midspan): "
-        f"{analysed_member.max_moment('My', 'SLS') / 1000:.2f} kNm"
+        f"{analysed_beam.max_moment('My', 'SLS') / 1000:.2f} kNm"
     )
     print(
         f"Min. bending moment My (midspan): "
-        f"{analysed_member.min_moment('My', 'SLS') / 1000:.2f} kNm"
+        f"{analysed_beam.min_moment('My', 'SLS') / 1000:.2f} kNm"
     )
     print(
         f"Max. shear force Fz             : "
-        f"{analysed_member.max_shear('Fz', 'SLS') / 1000:.2f} kN"
+        f"{analysed_beam.max_shear('Fz', 'SLS') / 1000:.2f} kN"
     )
     print(
         f"Min. shear force Fz             : "
-        f"{analysed_member.min_shear('Fz', 'SLS') / 1000:.2f} kN"
+        f"{analysed_beam.min_shear('Fz', 'SLS') / 1000:.2f} kN"
     )
     print(
         "Max. deflection dz (midspan)    : "
-        f"{analysed_member.max_deflection('dz', 'SLS') * 1000:.2f} mm"
+        f"{analysed_beam.max_deflection('dz', 'SLS') * 1000:.2f} mm"
     )
     print(
         "Analytical M_max                : "

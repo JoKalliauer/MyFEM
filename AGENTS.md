@@ -9,6 +9,8 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-22 14:40 CET: Copilot:      Set 2D reference and model plane to x-z
 2026-11-22 19:48 CET: Copilot:      Documented .mfs workflow and concise change logs
 2026-11-23 22:09 CET: Copilot:      Clarified format-version approval and patch rules
+2026-11-24 22:02 CET: Copilot:      Clarified early-stage breaking changes and beam format
+2026-11-24 23:39 CET: Copilot:      Defined coordinated date-based application and format versions
 )
 
 # AGENTS.md: Instructions for AI coding assistants
@@ -63,9 +65,9 @@ GUI (PySide6)  ->  commands (QUndoCommand)  ->  Model (pure Python)  ->  Solver 
 
 1. **The model and solver layers never import Qt.** (`myfem/model`, `myfem/solver`, `myfem/io`). They must be testable with plain pytest and no display.
 2. A thin **Qt adapter layer** wraps the pure-Python model (Qt item models, change signals).
-3. **All model changes go through `QUndoCommand` subclasses** (`AddNode`, `MoveNode`, `AddMember`, `DeleteMember`, ...). Views and tools must never mutate the model directly. This guarantees consistent undo/redo and keeps 2D and 3D views in sync.
+3. **All model changes go through `QUndoCommand` subclasses** (`AddNode`, `MoveNode`, `AddBeam`, `DeleteBeam`, ...). Views and tools must never mutate the model directly. This guarantees consistent undo/redo and keeps 2D and 3D views in sync.
 4. Views react to model-change signals and redraw. Views do not talk to each other.
-5. **Tools** (select, node, member, ...) are small state machines separate from the view widgets. "Member from node A to node B" uses the same tool logic in 2D and 3D; only the source of click events differs.
+5. **Tools** (select, node, beam, ...) are small state machines separate from the view widgets. "Beam from node A to node B" uses the same tool logic in 2D and 3D; only the source of click events differs.
 6. The solver wrapper is the only place that knows PyNite's API and its axis conventions (see section 7).
 
 Suggested layout:
@@ -88,11 +90,11 @@ examples/
 |---|---|---|
 | Create node | click in the canvas (grid snapping) | type coordinates in the node table or a dialog |
 | Move node | drag | edit coordinates in the table |
-| Create member | click or drag from node to node | click node A, then node B (picking) |
-| Selection | click, rubber band | click a node or member (picking) |
+| Create beam | click or drag from node to node | click node A, then node B (picking) |
+| Selection | click, rubber band | click a node or beam (picking) |
 | Technology | QGraphicsView | PyVista (pyvistaqt) |
 
-* The 2D editor is built first. The 3D view starts **read-only** (model, deformation, internal forces); 3D picking for members comes after that.
+* The 2D editor is built first. The 3D view starts **read-only** (model, deformation, internal forces); 3D picking for beams comes after that.
 * The node table is the shared coordinate input for 2D and 3D.
 * 3D means picking existing objects only, never free positioning in space.
 
@@ -100,19 +102,21 @@ examples/
 
 * **All internal data and all files use SI units**: meter (m), newton (N), pascal (Pa), kilogram (kg), second (s), radian (rad).
 * The model file contains a `"units": "SI"` field so future unit systems can be distinguished.
-* **The data model is 3D from the start**: nodes have `x, y, z`. 2D models use `y = 0`, the `x-z` plane, and `"dimension": 2`. Cross sections have `A, Iyy, Izz, I_T`, supports have six degrees of freedom, loads are vectors, and members have a cross-section orientation.
+* **The data model is 3D from the start**: nodes have `x, y, z`. 2D models use `y = 0`, the `x-z` plane, and `"dimension": 2`. Cross sections have `A, Iyy, Izz, I_T`, supports have six degrees of freedom, loads are vectors, and beams have a cross-section orientation.
 * Global coordinate system: **Z down** (structural convention), right-handed. PyNite uses Y up; 2D x-z coordinates are kept direct for the Pynite example, while the axis conversion belongs only in the solver wrapper and must be covered by tests.
-* Document the sign conventions (axial force, shear, moment, rotation direction, local member axes) in `docs/conventions.md` and keep it in sync with the code. Never change a sign convention silently.
-* Default local axis rule for members: derived from member direction and global Z; document the special case of vertical members.
+* Document the sign conventions (axial force, shear, moment, rotation direction, local beam axes) in `docs/conventions.md` and keep it in sync with the code. Never change a sign convention silently.
+* Default local axis rule for beams: derived from beam direction and global Z; document the special case of vertical beams.
 
 ## 8. Model file format
 
-* JSON, UTF-8, one top-level object with `"format_version"`, `"units"`, `"dimension"`, `"materials"`, `"sections"`, `"nodes"`, `"members"`, `"supports"`, `"loads"`, and `"load_combinations"`.
-* Every format change adds a migration; old files after the initial release of 0.1 must keep loading.
-* Ask the maintainer before changing the major/minor version (for example, `0.1` to `0.2`).
-* The agent may increase a patch subversion without asking (for example, `0.1.01` to `0.1.02`), but only in ascending order; never decrease or reuse a patch version.
+* JSON, UTF-8, one top-level object with `"format_version"`, `"units"`, `"dimension"`, `"materials"`, `"sections"`, `"nodes"`, `"beams"`, `"supports"`, `"loads"`, and `"load_combinations"`.
+* While the project is in early development, older model files do not need to remain loadable.
+* GUI/package and model-format versions share the same major/minor base (currently `0.2`); their date suffixes may differ.
+* During version base `0.2`, use this date-based hierarchy: `0.2`, `0.2.YYYY`, `0.2.YYYY-MM`, `0.2.YYYY-MM-DD`, `0.2.YYYY-MM-DD_HH`, `0.2.YYYY-MM-DD_HH-mm`. Add precision as needed, with at most one new version per minute. When an earlier date/time component changes, omit all later components.
+* JSON `"format_version"` values use that canonical string form. Keep accepting the existing numeric `0.2` value; write new files with the canonical string. In `pyproject.toml`, encode the same package version as PEP 440 dotted numeric components (for example, canonical `0.2.2026-11-24_23-39` is stored as `0.2.2026.11.24.23.39`) and display the canonical form in the GUI.
+* A breaking model-format change must increment the major/minor base (for example, `0.2` to `0.3`) and must be actively requested or explicitly confirmed by the maintainer before implementation. Do not decrease or reuse a version.
 * Validate on load (JSON Schema or explicit checks) and fail with clear, specific error messages.
-* Use stable string IDs for nodes and members, not list indices.
+* Use stable string IDs for nodes and beams, not list indices.
 * Write deterministic output (sorted keys, fixed indentation) so files diff cleanly in Git.
 * `.mfs` is the line-oriented, human-readable MyFEM command script. Parse it as MyFEM commands; never execute it as Python. The script compiler generates the corresponding JSON model.
 * The GUI's **Calculate** action saves the `.mfs`, generates same-basename `.json` and `.py` files, runs PyNite, and saves solver output as same-basename `.out`.
@@ -141,9 +145,9 @@ Configuration (user preferences, not model data) uses **TOML** read with `tomlli
   2. Matplotlib output for N/V/M
   3. Empty PySide6 window with a QGraphicsView
   4. Create/move nodes in 2D
-  5. Members, then supports and loads
+  5. Beams, then supports and loads
   6. Tables and undo/redo
-  7. 3D view (read-only), then 3D member picking
+  7. 3D view (read-only), then 3D beam picking
 * Do not refactor unrelated code. Do not rename or move files without being asked.
 * Prefer simple, readable code with type hints. Keep functions short, docstrings for public API.
 * If a requirement is ambiguous (sign convention, unit, behavior), ask instead of guessing.

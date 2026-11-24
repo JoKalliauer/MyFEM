@@ -6,15 +6,16 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-22 18:40 CET: Copilot: Added replayable simply-supported beam commands
+# 2026-11-24 22:02 CET: Copilot: Changed model command to beam while retaining M1
 
 # Model material and cross-section
 material steel E=210000000000 G=80770000000 nu=0.3 rho=78500
 section HEB300 A=0.01491 I_yy=0.0002517 I_zz=0.00008563 I_T=0.00000185
 
-# Nodes and member
+# Nodes and beam
 node N1 x=0 y=0 z=0
 node N2 x=8 y=0 z=0
-member M1 N1 N2 material=steel section=HEB300
+beam M1 N1 N2 material=steel section=HEB300
 
 # Supports, load, and combination
 support N1 DX=true DY=true DZ=true RX=true RY=false RZ=true

@@ -6,14 +6,28 @@
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
 # 2026-11-23 23:41 CET: Copilot: Separates support markers from node labels
+# 2026-11-24 22:02 CET: Copilot: Renamed model geometry and tool mode to beams
+# 2026-11-24 22:30 CET: Copilot: Emits node edit requests on double-click
+# 2026-11-24 22:50 CET: Copilot: Adds beam and support selection and edit requests
+# 2026-11-24 23:15 CET: Copilot: Emits node context-menu requests on right-click
+# 2026-11-24 23:22 CET: Copilot: Allows node context menus in every tool mode
+# 2026-11-24 23:24 CET: Copilot: Adds mouse-wheel zoom to the 2D canvas
 
-"""Interactive 2D canvas for entering nodes and members."""
+"""Interactive 2D canvas for entering nodes and beams."""
 
 import math
 from typing import Literal
 
-from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QBrush, QColor, QMouseEvent, QPainter, QPen, QPolygonF
+from PySide6.QtCore import QPoint, QPointF, QRectF, Qt, Signal
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QMouseEvent,
+    QPainter,
+    QPen,
+    QPolygonF,
+    QWheelEvent,
+)
 from PySide6.QtWidgets import QGraphicsScene, QGraphicsView
 
 _PIXELS_PER_METER = 30.0
@@ -22,6 +36,9 @@ _GRID_PIXELS = _PIXELS_PER_METER * _GRID_STEP
 _SCENE_RECT = QRectF(-900, -600, 1800, 1200)
 _REFERENCE_FIBER_COLOR = "#747c85"
 _REFERENCE_FIBER_OFFSET = 7.0
+_ZOOM_FACTOR = 1.15
+_MIN_ZOOM = 0.2
+_MAX_ZOOM = 8.0
 
 
 class ModelCanvas2D(QGraphicsView):
@@ -29,6 +46,9 @@ class ModelCanvas2D(QGraphicsView):
 
     node_position_clicked = Signal(float, float)
     node_selected = Signal(str)
+    object_selected = Signal(str, str)
+    object_double_clicked = Signal(str, str)
+    node_context_requested = Signal(str, QPoint)
     message_requested = Signal(str)
 
     def __init__(self) -> None:
@@ -42,49 +62,69 @@ class ModelCanvas2D(QGraphicsView):
         self.setDragMode(QGraphicsView.DragMode.NoDrag)
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self._mode: Literal["select", "node", "member"] = "select"
+        self.setTransformationAnchor(QGraphicsView.ViewportAnchor.AnchorUnderMouse)
+        self._mode: Literal["select", "node", "beam"] = "select"
         self._node_positions: dict[str, QPointF] = {}
-        self._member_endpoints: list[tuple[str, str]] = []
+        self._beam_endpoints: list[tuple[str, str, str]] = []
         self._supports: list[tuple[str, bool, bool, bool]] = []
+        self._selected_object: tuple[str, str] | None = None
         self._pending_node_id: str | None = None
         self.setMinimumSize(360, 300)
         self.set_model(None)
         self.centerOn(0, 0)
 
-    def set_mode(self, mode: Literal["select", "node", "member"]) -> None:
+    def wheelEvent(self, event: QWheelEvent) -> None:
+        delta = event.angleDelta().y() or event.pixelDelta().y()
+        if delta == 0:
+            super().wheelEvent(event)
+            return
+
+        steps = max(-20.0, min(20.0, delta / 120.0))
+        current_scale = self.transform().m11()
+        target_scale = min(
+            _MAX_ZOOM,
+            max(_MIN_ZOOM, current_scale * (_ZOOM_FACTOR**steps)),
+        )
+        scale_factor = target_scale / current_scale
+        if scale_factor != 1.0:
+            self.scale(scale_factor, scale_factor)
+        event.accept()
+
+    def set_mode(self, mode: Literal["select", "node", "beam"]) -> None:
         """Set the active canvas input tool."""
         self._mode = mode
         cursor = (
             Qt.CursorShape.CrossCursor
-            if mode in ("node", "member")
+            if mode in ("node", "beam")
             else Qt.CursorShape.ArrowCursor
         )
         self.setCursor(cursor)
 
     @property
-    def mode(self) -> Literal["select", "node", "member"]:
+    def mode(self) -> Literal["select", "node", "beam"]:
         """Return the active input tool."""
         return self._mode
 
     def set_pending_node(self, node_id: str | None) -> None:
-        """Highlight the first endpoint while a member is being entered."""
+        """Highlight the first endpoint while a beam is being entered."""
         self._pending_node_id = node_id
         self._redraw_model()
 
     def set_model(self, model: dict[str, object] | None) -> None:
         """Replace the displayed geometry with a compiled model."""
         self._node_positions = {}
-        self._member_endpoints = []
+        self._beam_endpoints = []
         self._supports = []
         self._scene.clear()
         if model is None:
+            self._selected_object = None
             self._draw_grid()
             return
 
         node_records = model.get("nodes")
-        member_records = model.get("members")
-        if not isinstance(node_records, list) or not isinstance(member_records, list):
-            raise TypeError("Model nodes and members must be lists")
+        beam_records = model.get("beams")
+        if not isinstance(node_records, list) or not isinstance(beam_records, list):
+            raise TypeError("Model nodes and beams must be lists")
 
         for record in node_records:
             if not isinstance(record, dict):
@@ -105,19 +145,23 @@ class ModelCanvas2D(QGraphicsView):
                 float(z) * _PIXELS_PER_METER,
             )
 
-        for record in member_records:
+        for record in beam_records:
             if not isinstance(record, dict):
-                raise TypeError("Each model member must be an object")
+                raise TypeError("Each model beam must be an object")
+            identifier = record.get("id")
             start_id = record.get("node_start")
             end_id = record.get("node_end")
             if (
-                not isinstance(start_id, str)
+                not isinstance(identifier, str)
+                or not isinstance(start_id, str)
                 or not isinstance(end_id, str)
                 or start_id not in self._node_positions
                 or end_id not in self._node_positions
             ):
-                raise TypeError("Each model member must reference existing nodes")
-            self._member_endpoints.append((start_id, end_id))
+                raise TypeError(
+                    "Each model beam must have an id and reference existing nodes"
+                )
+            self._beam_endpoints.append((identifier, start_id, end_id))
 
         support_records = model.get("supports")
         if not isinstance(support_records, list):
@@ -138,6 +182,15 @@ class ModelCanvas2D(QGraphicsView):
             ):
                 raise TypeError("Each 2D support must define node, DX, DZ, and RY")
             self._supports.append((node_id, dx, dz, ry))
+        if self._selected_object is not None:
+            kind, identifier = self._selected_object
+            available_ids = {
+                "node": set(self._node_positions),
+                "beam": {beam_id for beam_id, _, _ in self._beam_endpoints},
+                "support": {node_id for node_id, _, _, _ in self._supports},
+            }
+            if identifier not in available_ids.get(kind, set()):
+                self._selected_object = None
         self._redraw_model()
 
     def _draw_grid(self) -> None:
@@ -161,13 +214,17 @@ class ModelCanvas2D(QGraphicsView):
     def _redraw_model(self) -> None:
         self._scene.clear()
         self._draw_grid()
-        member_pen = QPen(QColor("#26384d"), 3)
+        beam_pen = QPen(QColor("#26384d"), 3)
         fiber_pen = QPen(QColor(_REFERENCE_FIBER_COLOR), 1)
         support_pen = QPen(QColor("#46525e"), 1.5)
-        for start_id, end_id in self._member_endpoints:
+        selected_pen = QPen(QColor("#e67700"), 4)
+        for beam_id, start_id, end_id in self._beam_endpoints:
             start = self._node_positions[start_id]
             end = self._node_positions[end_id]
-            self._scene.addLine(start.x(), start.y(), end.x(), end.y(), member_pen)
+            pen = (
+                selected_pen if self._selected_object == ("beam", beam_id) else beam_pen
+            )
+            self._scene.addLine(start.x(), start.y(), end.x(), end.y(), pen)
             dx = end.x() - start.x()
             dz = end.y() - start.y()
             length = math.hypot(dx, dz)
@@ -191,14 +248,21 @@ class ModelCanvas2D(QGraphicsView):
                 )
 
         for node_id, dx, dz, ry in self._supports:
-            self._draw_support(self._node_positions[node_id], dx, dz, ry, support_pen)
+            pen = (
+                QPen(QColor("#e67700"), 2.5)
+                if self._selected_object == ("support", node_id)
+                else support_pen
+            )
+            self._draw_support(self._node_positions[node_id], dx, dz, ry, pen)
 
         support_states = {
             node_id: (dx, dz, ry) for node_id, dx, dz, ry in self._supports
         }
         node_pen = QPen(QColor("#153f73"), 1.5)
         for identifier, position in self._node_positions.items():
-            is_pending = identifier == self._pending_node_id
+            is_pending = identifier == self._pending_node_id or (
+                self._selected_object == ("node", identifier)
+            )
             self._scene.addEllipse(
                 QRectF(position.x() - 5, position.y() - 5, 10, 10),
                 node_pen,
@@ -294,7 +358,77 @@ class ModelCanvas2D(QGraphicsView):
                 nearest_distance = distance
         return nearest_id
 
+    def _nearest_support(self, position: QPointF) -> str | None:
+        for node_id, dx, dz, ry in self._supports:
+            node_position = self._node_positions[node_id]
+            offset_x = position.x() - node_position.x()
+            offset_z = position.y() - node_position.y()
+            if dx and dz:
+                hit = abs(offset_x) <= 15 and 3 <= offset_z <= 27
+            elif dz:
+                hit = abs(offset_x) <= 15 and 4 <= offset_z <= 21
+            elif dx:
+                hit = 4 <= offset_x <= 21 and abs(offset_z) <= 15
+            elif ry:
+                radius = math.hypot(offset_x, offset_z)
+                hit = 8 <= radius <= 12
+            else:
+                hit = abs(offset_x) + abs(offset_z) <= 8
+            if hit:
+                return node_id
+        return None
+
+    def _nearest_beam(self, position: QPointF) -> str | None:
+        nearest_id: str | None = None
+        nearest_distance = 8.0
+        for beam_id, start_id, end_id in self._beam_endpoints:
+            start = self._node_positions[start_id]
+            end = self._node_positions[end_id]
+            direction = end - start
+            length_squared = direction.x() ** 2 + direction.y() ** 2
+            projection = (
+                (position - start).x() * direction.x()
+                + (position - start).y() * direction.y()
+            ) / length_squared
+            projection = min(1.0, max(0.0, projection))
+            closest = start + direction * projection
+            distance = math.hypot(
+                position.x() - closest.x(), position.y() - closest.y()
+            )
+            if distance < nearest_distance:
+                nearest_id = beam_id
+                nearest_distance = distance
+        return nearest_id
+
+    def _object_at(self, position: QPointF) -> tuple[str, str] | None:
+        support_id = self._nearest_support(position)
+        if support_id is not None:
+            return "support", support_id
+        node_id = self._nearest_node(position)
+        if node_id is not None:
+            return "node", node_id
+        beam_id = self._nearest_beam(position)
+        if beam_id is not None:
+            return "beam", beam_id
+        return None
+
+    def _select_object(self, selected: tuple[str, str] | None) -> None:
+        self._selected_object = selected
+        self._redraw_model()
+        self.object_selected.emit(*(selected or ("", "")))
+
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.RightButton:
+            position = self.mapToScene(event.position().toPoint())
+            node_id = self._nearest_node(position)
+            if node_id is not None:
+                self._select_object(("node", node_id))
+                global_position = self.viewport().mapToGlobal(
+                    event.position().toPoint()
+                )
+                self.node_context_requested.emit(node_id, global_position)
+                event.accept()
+                return
         if event.button() != Qt.MouseButton.LeftButton:
             super().mousePressEvent(event)
             return
@@ -308,14 +442,22 @@ class ModelCanvas2D(QGraphicsView):
                 self.message_requested.emit("A node already exists at this position.")
             else:
                 self.node_position_clicked.emit(x, z)
-        elif self._mode == "member":
+        elif self._mode == "beam":
             node_id = self._nearest_node(position)
             if node_id is None:
-                self.message_requested.emit("Click an existing node to enter a member.")
+                self.message_requested.emit("Click an existing node to enter a beam.")
             else:
                 self.node_selected.emit(node_id)
         elif self._mode == "select":
-            node_id = self._nearest_node(position)
-            if node_id is not None:
-                self.node_selected.emit(node_id)
+            self._select_object(self._object_at(position))
         event.accept()
+
+    def mouseDoubleClickEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self._mode == "select":
+            selected = self._object_at(self.mapToScene(event.position().toPoint()))
+            if selected is not None:
+                self._select_object(selected)
+                self.object_double_clicked.emit(*selected)
+                event.accept()
+                return
+        super().mouseDoubleClickEvent(event)

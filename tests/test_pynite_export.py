@@ -12,13 +12,19 @@
 # 2026-11-23 21:53 CET: Copilot: Tested precision defaults and result normalization
 # 2026-11-23 21:53 CET: Copilot: Tested precision output and legacy migration
 # 2026-11-23 22:15 CET: Copilot: Tested centered statics output cells
+# 2026-11-24 22:02 CET: Copilot: Tested format 0.2 beam export and schema validation
+# 2026-11-24 23:39 CET: Copilot: Tests compatible timestamped format versions
 
 import json
 from pathlib import Path
 
 import pytest
 
-from myfem.pynite_export import generate_and_run, generate_python_script
+from myfem.pynite_export import (
+    _normalize_model_data,
+    generate_and_run,
+    generate_python_script,
+)
 from myfem.script import write_model
 
 REFERENCE_JSON = (
@@ -27,6 +33,34 @@ REFERENCE_JSON = (
     / "simply_supported_beam"
     / "simply_supported_beam_heb300.json"
 )
+
+
+@pytest.mark.parametrize(
+    "model_version",
+    (
+        0.2,
+        "0.2",
+        "0.2.2027",
+        "0.2.2027-01",
+        "0.2.2027-01-03",
+        "0.2.2027-01-03_04",
+        "0.2.2027-01-03_04-05",
+    ),
+)
+def test_model_format_accepts_compatible_02_versions(model_version: object) -> None:
+    model_data = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
+    model_data["format_version"] = model_version
+
+    _normalize_model_data(model_data)
+
+
+@pytest.mark.parametrize("model_version", ("0.3", "0.2.2026-13", 0.1))
+def test_model_format_rejects_incompatible_versions(model_version: object) -> None:
+    model_data = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
+    model_data["format_version"] = model_version
+
+    with pytest.raises(ValueError, match="compatible 0.2 version family"):
+        _normalize_model_data(model_data)
 
 
 def test_generated_pynite_script_saves_results_to_log(tmp_path: Path) -> None:
@@ -47,10 +81,10 @@ def test_fallback_properties_omit_deformation_results(tmp_path: Path) -> None:
     script_path.write_text(
         "node N1 x=0 y=0 z=0\n"
         "node N2 x=8 y=0 z=0\n"
-        "member M1 N1 N2 material=default section=default\n"
+        "beam B1 N1 N2 material=default section=default\n"
         "support N1 DX=true DY=true DZ=true RX=true RY=false RZ=true\n"
         "support N2 DX=false DY=true DZ=true RX=true RY=false RZ=true\n"
-        "load distributed M1 direction=FZ value_start=10000 value_end=10000 "
+        "load distributed B1 direction=FZ value_start=10000 value_end=10000 "
         "position_start=0 position_end=8 case=default\n",
         encoding="utf-8",
     )
@@ -93,10 +127,10 @@ def test_precision_suppresses_small_statics_residual(
     script_path.write_text(
         precision_command + "node N1 x=-4 y=0 z=3\n"
         "node rechts x=4 y=0 z=3\n"
-        "member M1 N1 rechts material=default section=default\n"
+        "beam B1 N1 rechts material=default section=default\n"
         "support N1 DX=true DY=true DZ=true RX=true RY=false RZ=true\n"
         "support rechts DX=false DY=true DZ=true RX=true RY=false RZ=true\n"
-        "load distributed M1 direction=FZ value_start=1000 value_end=1000 "
+        "load distributed B1 direction=FZ value_start=1000 value_end=1000 "
         "position_start=0 position_end=8 case=default\n",
         encoding="utf-8",
     )
@@ -138,10 +172,10 @@ def test_single_named_property_definition_keeps_deformation_results(
         "section HEB A=0.01491 I_yy=0.0002517 I_zz=0.00008563 I_T=0.00000185\n"
         "node N1 x=0 y=0 z=0\n"
         "node N2 x=8 y=0 z=0\n"
-        "member M1 N1 N2 material=default section=default\n"
+        "beam B1 N1 N2 material=default section=default\n"
         "support N1 DX=true DY=true DZ=true RX=true RY=false RZ=true\n"
         "support N2 DX=false DY=true DZ=true RX=true RY=false RZ=true\n"
-        "load distributed M1 direction=FZ value_start=10000 value_end=10000 "
+        "load distributed B1 direction=FZ value_start=10000 value_end=10000 "
         "position_start=0 position_end=8 case=default\n",
         encoding="utf-8",
     )
@@ -157,27 +191,22 @@ def test_single_named_property_definition_keeps_deformation_results(
     assert "Deflections and rotations omitted" not in output
 
 
-@pytest.mark.parametrize("legacy_version", (0.1, 1, 2))
-def test_legacy_json_versions_are_migrated(
-    tmp_path: Path, legacy_version: float
-) -> None:
+@pytest.mark.parametrize("legacy_key", ("members", "member"))
+def test_format_0_2_rejects_legacy_beam_keys(tmp_path: Path, legacy_key: str) -> None:
     data = json.loads(REFERENCE_JSON.read_text(encoding="utf-8"))
-    data["format_version"] = legacy_version
-    model_path = tmp_path / "legacy.json"
+    if legacy_key == "members":
+        data["members"] = data.pop("beams")
+        message = "uses 'beams', not 'members'"
+    else:
+        data["loads"][0]["member"] = data["loads"][0].pop("beam")
+        message = "loads must reference beams"
+    model_path = tmp_path / "invalid_format_0_2.json"
     model_path.write_text(json.dumps(data), encoding="utf-8")
 
-    python_path = tmp_path / "migrated.py"
-    generate_python_script(model_path, python_path, tmp_path / "legacy.out")
-    generated_source = python_path.read_text(encoding="utf-8")
-
-    assert '"format_version":0.1' in generated_source
-    assert '"auto_generated":false' in generated_source
-    assert "generated_default" not in generated_source
-    assert "# MyFEM generated the default SLS combination" not in generated_source
-    assert (
-        '"precision":{"absolute":0.0,"relative":1e-12,"defaulted":true}'
-        in generated_source
-    )
+    with pytest.raises(ValueError, match=message):
+        generate_python_script(
+            model_path, tmp_path / "invalid.py", tmp_path / "invalid.out"
+        )
 
 
 def test_no_combination_with_non_default_case_is_rejected(tmp_path: Path) -> None:

@@ -3,16 +3,16 @@
 [comment]: # (Created: 2026-11-20
 Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
-2026-11-22 13:06 CET: Claude:      Safety and liability
-2026-11-22 18:40 CET: Copilot:     Documented replayable model command scripts
-2026-11-22 19:28 CET: Copilot:     Documented PyNite script and result-log generation
-2026-11-22 19:40 CET: Copilot:     Documented GUI calculation and .out results
-2026-11-22 21:20 CET: Copilot:     Documented file toolbar and paired JSON save
-2026-11-22 21:36 CET: Copilot:     Documented short GUI launch commands
-2026-11-23 20:40 CET: Copilot:     Added MyFEM and PyNite acknowledgements
-2026-11-23 21:17 CET: Copilot:     Documented model-entry defaults and toolbar
-2026-11-23 21:33 CET: Copilot:     Set JSON format version to 0.1
-2026-11-23 21:53 CET: Copilot:     Documented precision in format 0.1
+2026-11-24 22:30 CET: Copilot:     Documented double-click node coordinate editing
+2026-11-24 22:40 CET: Copilot:     Documented Undo toolbar action
+2026-11-24 22:50 CET: Copilot:     Documented beam and support selection and editing
+2026-11-24 23:05 CET: Copilot:     Documented node-on-beam splitting
+2026-11-24 23:15 CET: Copilot:     Documented node context menu and script defaults
+2026-11-24 23:24 CET: Copilot:     Documented canvas zoom and node deletion
+2026-11-24 23:39 CET: Copilot:     Documented coordinated date-based versions
+2026-11-24 23:47 CET: Copilot:     Documented timestamped model filename suggestion
+2026-11-24 23:51 CET: Copilot:     Documented split confirmation button order
+2026-11-24 23:53 CET: Copilot:     Separated GUI startup and usage instructions
 )
 
 # MyFEM
@@ -61,7 +61,7 @@ uv sync
  [x] plain-text-GUI-Protokoll for test-file
  [x] command-oriented GUI prototype
 
-## Run the GUI
+## Start the GUI
 
 After `uv sync`, start the GUI from the repository root:
 
@@ -71,18 +71,41 @@ uv run myfem
 
 Alternatively, use `run_myfem.bat` on Windows or `./run_myfem.sh` on Linux/WSL.
 
-The toolbar provides **New**, **Open**, **Save**, **Node**, **Member**,
+## Using the GUI
+
+The toolbar provides **New**, **Open**, **Save**, **Undo**, **Node**, **Beam**,
 **Support**, **Distributed load**, and **Calculate**. The Help menu contains
-version and update information. The 2D graphical editor is not implemented
-yet. On WSLg, Qt may require `libxcb-cursor0`.
+version and update information. Left-click **Node** or **Beam** to enter it
+graphically; right-click to use its coordinate or endpoint dialog. Press
+**Esc** to return to Select mode. Scroll the mouse wheel to zoom the canvas.
+Click a node, beam, or support to select it;
+the selected object is highlighted. Double-click to edit it. Node coordinates,
+beam endpoints and material/section references, and a support's 2D restraints
+can be edited; support restraints outside the 2D plane are preserved. Changes
+remain recorded in the `.mfs` script. On WSLg, Qt may require `libxcb-cursor0`.
+When a node is added in the interior of a beam, MyFEM asks whether to split
+that beam, with **Yes** before **No**. The split preserves its material,
+section, and distributed loads, and finds unused child beam IDs. Right-click a
+node to edit it, delete it, or edit its support (or add one if absent).
+Deleting a node also removes connected beams, their loads, and any support at
+the node.
+
+On the first save of a new GUI model, the `.mfs` file receives version/date
+comments and `model 2D xz x=right z=down` at the top. This metadata is not
+added when saving an opened script. The save dialog suggests
+`MyFEM-Model-YYYY-MM-DD_HH_mm.mfs`, using the local date and time.
 
 ## Model-entry defaults
 
-The node dialog fixes `y = 0` for the 2D X-Z model. New members use
-`material=default section=default`; supports set `DY`, `RX`, and `RZ` to true,
-and distributed loads use `case=default`.
+The 2D X-Z model defaults node `y` to zero, so GUI-created node commands omit
+`y=0`. Beams use the default material and section unless explicit names are
+specified; the default options are omitted from GUI-created `.mfs` commands
+and resolved when the JSON model is generated. Supports default `DY`, `RX`,
+and `RZ` to true, so those values are omitted from GUI-created commands.
+Distributed loads use `case=default`. A support with `DX`, `DZ`, and `RY` all
+false is removed in 2D mode.
 
-If a member has no material or section definition, MyFEM uses these provisional
+If a beam has no material or section definition, MyFEM uses these provisional
 values:
 
 | Default material | Value |
@@ -102,12 +125,17 @@ values:
 When exactly one differently named material or section exists, it is used for
 `default`; if multiple exist without an explicit `default`, compilation fails.
 Automatically inserted values are marked in JSON, and deformation results are
-omitted for affected members. If no combination is defined, `SLS default=1` is
+omitted for affected beams. If no combination is defined, `SLS default=1` is
 generated only when loads use the `default` case; other load cases require an
 explicit combination.
 
-New JSON models use `format_version: 0.1`. Existing integer versions `1` and
-`2` remain loadable and are migrated when exported to PyNite.
+New JSON models use a string `format_version` with base `0.2` and a top-level
+`beams` collection. The GUI/package version and format version share this base,
+but their date suffixes can differ. The canonical date suffix supports year,
+month, day, hour, and minute precision; new versions are limited to one per
+minute. Package metadata uses equivalent PEP 440 dotted numeric components.
+Existing numeric `format_version: 0.2` files remain supported; version `0.1` is
+not supported.
 
 ## Result precision
 

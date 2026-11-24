@@ -5,30 +5,31 @@
 Last Changes:
 YYYY-MM-DD HH:mm CET: Author: Changes
 2026-11-23 23:35 CET: Copilot: Documented 2D support symbols and reference-fiber markers
+2026-11-24 22:02 CET: Copilot: Renamed model orientation terminology to beams
 -->
 
-# 2D coordinate and member-orientation convention
+# 2D coordinate and beam-orientation convention
 
 ## Global axes
 
 The 2D model lies in the global x-z plane with `y = 0`. Positive x points right
 and positive z points down. The canvas uses the same directions.
 
-## Member reference fiber
+## Beam reference fiber
 
-The member's ordered start and end nodes define its direction. In the x-z plane,
+The beam's ordered start and end nodes define its direction. In the x-z plane,
 the positive reference-fiber direction is the normalized vector
 `(-delta_z, delta_x)`, where `delta_x` and `delta_z` are the end coordinates
 minus the start coordinates. The canvas indicates this reference fiber with
-three short, thin gray dashes parallel to and offset from the member centerline.
+three short, thin gray dashes parallel to and offset from the beam centerline.
 
-Therefore, a member directed left-to-right has its reference fiber below it
-(positive z). A member directed bottom-to-top has its reference fiber to the
-right (positive x). Reversing the member's start and end nodes reverses the
+Therefore, a beam directed left-to-right has its reference fiber below it
+(positive z). A beam directed bottom-to-top has its reference fiber to the
+right (positive x). Reversing the beam's start and end nodes reverses the
 reference-fiber direction.
 
-This direction agrees with PyNite's default local z-axis for members in the
-x-z plane when the member rotation is zero.
+This direction agrees with the solver's default local z-axis in the x-z plane
+when the beam rotation is zero.
 
 ## 2D supports
 

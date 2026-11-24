@@ -11,6 +11,8 @@
 # 2026-11-23 21:33 CET: Copilot: Migrated legacy model versions to format 0.1
 # 2026-11-23 21:53 CET: Copilot: Applied precision output and retained format 0.1
 # 2026-11-23 22:15 CET: Copilot: Preserved centered PyNite statics cells
+# 2026-11-24 22:02 CET: Copilot: Exported beams from format 0.2 and rejected older versions
+# 2026-11-24 23:39 CET: Copilot: Accepts compatible timestamped 0.2 model versions
 
 """Generate and run a standalone PyNite script from a MyFEM JSON model."""
 
@@ -22,6 +24,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 from string import Template
+
+from myfem.versioning import is_compatible_format_version
 
 PYTHON_TEMPLATE = Template('''# AI created the file
 # Author: MyFEM generator
@@ -71,13 +75,13 @@ def build_model() -> FEModel3D:
             section["I_T"],
         )
 
-    for member in MODEL_DATA["members"]:
+    for beam in MODEL_DATA["beams"]:
         model.add_member(
-            member["id"],
-            member["node_start"],
-            member["node_end"],
-            member["material"],
-            member["section"],
+            beam["id"],
+            beam["node_start"],
+            beam["node_end"],
+            beam["material"],
+            beam["section"],
         )
 
     for support in MODEL_DATA["supports"]:
@@ -92,10 +96,10 @@ def build_model() -> FEModel3D:
         )
 
     for load in MODEL_DATA["loads"]:
-        if load["type"] != "member_distributed":
+        if load["type"] != "beam_distributed":
             raise ValueError(f"Unsupported load type: {load['type']!r}")
         model.add_member_dist_load(
-            load["member"],
+            load["beam"],
             load["direction"],
             load["value_start"],
             load["value_end"],
@@ -129,30 +133,33 @@ def _result_scales(model: FEModel3D) -> dict[str, float]:
                 getattr(node, field)[combination_id] for field in ("DX", "DY", "DZ")
             )
 
-        for member_data in MODEL_DATA["members"]:
-            member = model.members[member_data["id"]]
+        for beam_data in MODEL_DATA["beams"]:
+            pynite_beam = model.members[beam_data["id"]]
             force_values.extend(
-                (member.max_axial(combination_id), member.min_axial(combination_id))
+                (
+                    pynite_beam.max_axial(combination_id),
+                    pynite_beam.min_axial(combination_id),
+                )
             )
             for direction in ("Fy", "Fz"):
                 force_values.extend(
                     (
-                        member.max_shear(direction, combination_id),
-                        member.min_shear(direction, combination_id),
+                        pynite_beam.max_shear(direction, combination_id),
+                        pynite_beam.min_shear(direction, combination_id),
                     )
                 )
             for direction in ("My", "Mz"):
                 moment_values.extend(
                     (
-                        member.max_moment(direction, combination_id),
-                        member.min_moment(direction, combination_id),
+                        pynite_beam.max_moment(direction, combination_id),
+                        pynite_beam.min_moment(direction, combination_id),
                     )
                 )
             for direction in ("dx", "dy", "dz"):
                 length_values.extend(
                     (
-                        member.max_deflection(direction, combination_id),
-                        member.min_deflection(direction, combination_id),
+                        pynite_beam.max_deflection(direction, combination_id),
+                        pynite_beam.min_deflection(direction, combination_id),
                     )
                 )
 
@@ -237,22 +244,22 @@ def print_results(model: FEModel3D, scales: dict[str, float]) -> None:
                 f"FZ={_format_result(node.RxnFZ[combination_id], scales['force'])} kN"
             )
 
-        print("--- Member results ---")
-        for member_data in MODEL_DATA["members"]:
-            member_id = member_data["id"]
-            member = model.members[member_id]
-            print(f"{member_id}:")
+        print("--- Beam results ---")
+        for beam_data in MODEL_DATA["beams"]:
+            beam_id = beam_data["id"]
+            pynite_beam = model.members[beam_id]
+            print(f"{beam_id}:")
             print(
-                f"  My max/min: {_format_result(member.max_moment('My', combination_id), scales['moment'])} / "
-                f"{_format_result(member.min_moment('My', combination_id), scales['moment'])} kNm"
+                f"  My max/min: {_format_result(pynite_beam.max_moment('My', combination_id), scales['moment'])} / "
+                f"{_format_result(pynite_beam.min_moment('My', combination_id), scales['moment'])} kNm"
             )
             print(
-                f"  Fz max/min: {_format_result(member.max_shear('Fz', combination_id), scales['force'])} / "
-                f"{_format_result(member.min_shear('Fz', combination_id), scales['force'])} kN"
+                f"  Fz max/min: {_format_result(pynite_beam.max_shear('Fz', combination_id), scales['force'])} / "
+                f"{_format_result(pynite_beam.min_shear('Fz', combination_id), scales['force'])} kN"
             )
             if (
-                member_data["material"] in auto_materials
-                or member_data["section"] in auto_sections
+                beam_data["material"] in auto_materials
+                or beam_data["section"] in auto_sections
             ):
                 print(
                     "  Deflections and rotations omitted because fallback "
@@ -260,7 +267,7 @@ def print_results(model: FEModel3D, scales: dict[str, float]) -> None:
                 )
             else:
                 print(
-                    f"  dz max: {_format_result(member.max_deflection('dz', combination_id), scales['length'], 0.001)} mm"
+                    f"  dz max: {_format_result(pynite_beam.max_deflection('dz', combination_id), scales['length'], 0.001)} mm"
                 )
         print()
 
@@ -289,21 +296,35 @@ if __name__ == "__main__":
 ''')
 
 
-def _migrate_model_data(data: dict[str, object]) -> dict[str, object]:
-    model_version = data.get("format_version", 1)
-    if isinstance(model_version, bool) or not isinstance(model_version, (int, float)):
-        raise TypeError("Model format_version must be a number")
-    current_float_version = isinstance(model_version, float) and model_version == 0.1
-    if not current_float_version and not (
-        isinstance(model_version, int) and model_version in (1, 2)
-    ):
-        raise ValueError(f"Unsupported model format version {model_version}")
+def _normalize_model_data(data: dict[str, object]) -> dict[str, object]:
+    model_version = data.get("format_version")
+    if not is_compatible_format_version(model_version):
+        raise ValueError(
+            f"Unsupported model format version {model_version!r}; "
+            "expected the compatible 0.2 version family"
+        )
+    if "members" in data:
+        raise ValueError("Model format 0.2 uses 'beams', not 'members'")
+    if not isinstance(data.get("beams"), list):
+        raise TypeError("Model beams must be a list")
+    loads = data.get("loads", [])
+    if not isinstance(loads, list):
+        raise TypeError("Model loads must be a list")
+    for load in loads:
+        if not isinstance(load, dict):
+            raise TypeError("Each model load must be an object")
+        if "member" in load or load.get("type") == "member_distributed":
+            raise ValueError("Model format 0.2 loads must reference beams")
+        if load.get("type") == "beam_distributed" and not isinstance(
+            load.get("beam"), str
+        ):
+            raise TypeError("Each distributed beam load must specify a beam ID")
 
-    migrated = dict(data)
+    normalized = dict(data)
     defaults = {
         "materials": {"auto_generated": False},
         "sections": {"auto_generated": False},
-        "members": {
+        "beams": {
             "material_was_default": False,
             "section_was_default": False,
         },
@@ -323,9 +344,8 @@ def _migrate_model_data(data: dict[str, object]) -> dict[str, object]:
                     **{key: record.get(key, value) for key, value in metadata.items()},
                 }
             )
-        migrated[collection] = upgraded_records
-    migrated["format_version"] = 0.1
-    return migrated
+        normalized[collection] = upgraded_records
+    return normalized
 
 
 def _ensure_precision(data: dict[str, object]) -> dict[str, object]:
@@ -428,7 +448,7 @@ def generate_python_script(model_path: Path, python_path: Path, log_path: Path) 
     data = json.loads(model_path.read_text(encoding="utf-8"))
     if not isinstance(data, dict):
         raise TypeError("The model JSON must contain a top-level object")
-    data = _migrate_model_data(data)
+    data = _normalize_model_data(data)
     data = _ensure_precision(data)
     data = _ensure_default_combination(data)
     data, combination_comment = _strip_combination_metadata(data)

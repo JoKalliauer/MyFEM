@@ -1,5 +1,5 @@
 {
-  "format_version": 0.1,
+  "format_version": "0.2.2026-11-24_23-39",
   "units": "SI",
   "dimension": 2,
   "materials": [
@@ -34,7 +34,7 @@
       "z": 0.0
     }
   ],
-  "members": [
+  "beams": [
     {
       "id": "M1",
       "node_start": "N1",
@@ -66,8 +66,8 @@
   ],
   "loads": [
     {
-      "type": "member_distributed",
-      "member": "M1",
+      "type": "beam_distributed",
+      "beam": "M1",
       "direction": "FZ",
       "value_start": 10000.0,
       "value_end": 10000.0,

@@ -254,7 +254,7 @@ wheels = [
 
 [[package]]
 name = "myfem"
-version = "0.1.0"
+version = "0.2.2026.11.24.23.39"
 source = { editable = "." }
 dependencies = [
     { name = "pynitefea" },

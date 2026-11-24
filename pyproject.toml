@@ -10,10 +10,11 @@
 # 2026-11-22 18:50 CET: Copilot: Added pytest for reproducible project tests
 # 2026-11-22 21:36 CET: Copilot: Added GUI launch entry points and package discovery
 # 2026-11-23 23:56 CET: Copilot: Added SPDX project license metadata
+# 2026-11-24 23:39 CET: Copilot: Aligned package base and timestamped version with format
 
 [project]
 name = "myfem"
-version = "0.1.0"
+version = "0.2.2026.11.24.23.39"
 license = "GPL-3.0-only"
 requires-python = ">=3.14"
 dependencies = [
