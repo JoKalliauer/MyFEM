@@ -3,7 +3,6 @@
 [comment]: # (Created: 2026-11-20
 Last Changes:
 YYYY-MM-DD HH:mmCEST: Author:      Changes
-2026-11-24 22:30 CET: Copilot:     Documented double-click node coordinate editing
 2026-11-24 22:40 CET: Copilot:     Documented Undo toolbar action
 2026-11-24 22:50 CET: Copilot:     Documented beam and support selection and editing
 2026-11-24 23:05 CET: Copilot:     Documented node-on-beam splitting
@@ -13,6 +12,7 @@ YYYY-MM-DD HH:mmCEST: Author:      Changes
 2026-11-24 23:47 CET: Copilot:     Documented timestamped model filename suggestion
 2026-11-24 23:51 CET: Copilot:     Documented split confirmation button order
 2026-11-24 23:53 CET: Copilot:     Separated GUI startup and usage instructions
+2026-11-25 00:01 CET: Copilot:     Documented GUI help instructions menu
 )
 
 # MyFEM
@@ -75,8 +75,9 @@ Alternatively, use `run_myfem.bat` on Windows or `./run_myfem.sh` on Linux/WSL.
 
 The toolbar provides **New**, **Open**, **Save**, **Undo**, **Node**, **Beam**,
 **Support**, **Distributed load**, and **Calculate**. The Help menu contains
-version and update information. Left-click **Node** or **Beam** to enter it
-graphically; right-click to use its coordinate or endpoint dialog. Press
+GUI instructions, version, and update information. Left-click **Node** or
+**Beam** to enter it graphically; right-click to use its coordinate or endpoint
+dialog. Press
 **Esc** to return to Select mode. Scroll the mouse wheel to zoom the canvas.
 Click a node, beam, or support to select it;
 the selected object is highlighted. Double-click to edit it. Node coordinates,

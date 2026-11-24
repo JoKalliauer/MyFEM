@@ -5,7 +5,6 @@
 
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
-# 2026-11-24 22:02 CET: Copilot: Tested beam terminology and B-series IDs
 # 2026-11-24 22:30 CET: Copilot: Tested double-click node coordinate editing
 # 2026-11-24 22:40 CET: Copilot: Tested undo toolbar and undoable model edits
 # 2026-11-24 22:50 CET: Copilot: Tested beam and support selection and editing
@@ -15,6 +14,7 @@
 # 2026-11-24 23:39 CET: Copilot: Tests coordinated application and format versions
 # 2026-11-24 23:47 CET: Copilot: Tests timestamped save filename suggestion
 # 2026-11-24 23:51 CET: Copilot: Tests the Yes-first split confirmation
+# 2026-11-25 00:01 CET: Copilot: Tests the Help menu instructions
 
 import json
 import os
@@ -44,6 +44,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSplitter,
     QTextBrowser,
 )
 
@@ -905,11 +906,15 @@ def test_help_menu_shows_attributions_version_and_manual_update(
     window = MainWindow()
     assert window.help_menu.title() == "&Help"
     assert [action.text() for action in window.help_menu.actions()] == [
+        "&GUI instructions...",
         "&Update instructions...",
         "&About MyFEM",
         "",
         "MyFEM on &GitHub",
     ]
+    central_layout = window.centralWidget().layout()
+    assert central_layout is not None
+    assert isinstance(central_layout.itemAt(0).widget(), QSplitter)
 
     about_content: dict[str, str] = {}
 
@@ -942,13 +947,19 @@ def test_help_menu_shows_attributions_version_and_manual_update(
     monkeypatch.setattr(
         QMessageBox,
         "information",
-        lambda _parent, _title, text: messages.update(update=text),
+        lambda _parent, title, text: messages.update({title: text}),
     )
+    window.instructions_action.trigger()
+    assert "x-z plane" in messages["GUI instructions"]
+    assert "0.5 m" in messages["GUI instructions"]
+    assert "reference fiber" in messages["GUI instructions"]
+    assert "Esc" in messages["GUI instructions"]
+
     window.update_action.trigger()
 
-    assert _application_version() in messages["update"]
-    assert "git pull --ff-only" in messages["update"]
-    assert "not installed automatically" in messages["update"]
+    assert _application_version() in messages["MyFEM update instructions"]
+    assert "git pull --ff-only" in messages["MyFEM update instructions"]
+    assert "not installed automatically" in messages["MyFEM update instructions"]
     window.close()
 
 

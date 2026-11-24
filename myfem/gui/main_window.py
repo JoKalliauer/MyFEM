@@ -5,7 +5,6 @@
 
 # Last Changes:
 # YYYY-MM-DD HH:mm CET: Author: Changes
-# 2026-11-24 22:02 CET: Copilot: Renamed model members to beams and IDs to B-series
 # 2026-11-24 22:30 CET: Copilot: Added double-click node coordinate editing
 # 2026-11-24 22:40 CET: Copilot: Added undo toolbar action for script edits
 # 2026-11-24 22:50 CET: Copilot: Added selectable and editable beams and supports
@@ -15,6 +14,7 @@
 # 2026-11-24 23:39 CET: Copilot: Displays date-formatted package versions
 # 2026-11-24 23:47 CET: Copilot: Suggests timestamped model filenames
 # 2026-11-24 23:51 CET: Copilot: Orders split confirmation as Yes then No
+# 2026-11-25 00:01 CET: Copilot: Moves canvas instructions into the Help menu
 
 """Command-oriented MyFEM window for recording replayable model scripts."""
 
@@ -72,6 +72,17 @@ from myfem.versioning import FORMAT_VERSION, format_package_version
 
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
 _PROJECT_URL = "https://github.com/JoKalliauer/MyFEM"
+_GUI_INSTRUCTIONS = (
+    "Enter nodes and beams in the x-z plane. Canvas clicks snap to 0.5 m.\n\n"
+    "Left-click the Node or Beam toolbar icon, then click the canvas to create "
+    "objects graphically. Right-click either icon to enter coordinates or "
+    "beam endpoints in a dialog.\n\n"
+    "Three gray dashes indicate the reference fiber (+local z). Click a node, "
+    "beam, or support to select it; double-click to edit. Right-click a node "
+    "for its context menu.\n\n"
+    "Supports use their DX, DZ, and RY restraints. Changes are recorded in "
+    "the .mfs script. Press Esc to return to Select mode."
+)
 _ICON_DIRECTORY = (
     _PROJECT_ROOT / "not_GPLv3" / "CC-BY-SA4.0" / "RFEM-6-Scaled-Sums-Envelope"
 )
@@ -253,15 +264,6 @@ class MainWindow(QMainWindow):
         command_row.addWidget(self.add_button)
 
         layout = QVBoxLayout()
-        layout.addWidget(
-            QLabel(
-                "Enter nodes and beams in the x-z plane. Canvas clicks snap to "
-                "0.5 m; three gray dashes indicate the reference fiber (+local z). "
-                "Click a node, beam, or support to select it; double-click to edit. "
-                "Supports use their DX, DZ, and RY restraints. Changes are "
-                "recorded in the .mfs script. Press Esc to return to Select mode."
-            )
-        )
         model_splitter = QSplitter(Qt.Orientation.Horizontal)
         model_splitter.addWidget(self.canvas_2d)
         model_splitter.addWidget(self.script_editor)
@@ -566,6 +568,8 @@ class MainWindow(QMainWindow):
         exit_action.triggered.connect(self.close)
 
         self.help_menu = self.menuBar().addMenu("&Help")
+        self.instructions_action = self.help_menu.addAction("&GUI instructions...")
+        self.instructions_action.triggered.connect(self.show_gui_instructions)
         self.update_action = self.help_menu.addAction("&Update instructions...")
         self.update_action.triggered.connect(self.show_update_information)
         self.about_action = self.help_menu.addAction("&About MyFEM")
@@ -664,6 +668,9 @@ class MainWindow(QMainWindow):
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
         dialog.exec()
+
+    def show_gui_instructions(self) -> None:
+        QMessageBox.information(self, "GUI instructions", _GUI_INSTRUCTIONS)
 
     def show_update_information(self) -> None:
         QMessageBox.information(
